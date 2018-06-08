@@ -13,6 +13,10 @@ public class Signal {
         return signalID;
     }
 
+    public String getSignalAspect() {
+        return SignalAspect;
+    }
+
     @Override
     public String toString() {
         String s="Signal ID: "+signalID+"\n"+"Station Code: "+stnCode+"\n"+"Signal Name: "+SignalName+"\n"+"Signal Aspect: "+SignalAspect+"\n";

@@ -2,6 +2,8 @@ package com.example.anarg.openmap2;
 
 
 
+import android.view.ScaleGestureDetector;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -86,6 +88,16 @@ public class BackEnd {
             allInformation.add(t);
         }
         return allInformation;
+    }
+
+    public ArrayList<Signal> getSignals(ArrayList<Train> t){
+        ArrayList<Signal> sg=new ArrayList<>();
+        for (Train a: t){
+            for(Signal s: a.getSignals()){
+                sg.add(s);
+            }
+        }
+        return  sg;
     }
 
     public HashMap<String, GeoPoint> jsonPlot(String s){

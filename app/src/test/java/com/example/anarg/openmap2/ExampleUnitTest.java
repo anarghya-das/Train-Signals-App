@@ -18,13 +18,17 @@ public class ExampleUnitTest {
     public void JsonTest(){
         BackEnd b=new BackEnd();
         String s= b.postRequest("http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead","",true);
-        ArrayList<Train> t=b.jsonGov(s);
-//        System.out.print(t);
-        String s2=b.getRequest("http://192.168.43.115/jsonrender.php");
-        System.out.print(b.jsonPlot(s2));
-        HashMap<String,GeoPoint> m=b.jsonPlot(s2);
-        for (String so: m.keySet()){
-            System.out.println(so+": "+m.get(so));
-        }
+        ArrayList<Signal> t=b.getSignals(b.jsonGov(s));
+        System.out.print(t);
+//        String s2=b.getRequest("http://192.168.43.115/jsonrender.php");
+//        System.out.print(b.jsonPlot(s2));
+//        HashMap<String,GeoPoint> m=b.jsonPlot(s2);
+//        for (String so: m.keySet()){
+//            System.out.println(so+": "+m.get(so));
+//        }
+    }
+    @Test
+    public void sqlLite(){
+
     }
 }
