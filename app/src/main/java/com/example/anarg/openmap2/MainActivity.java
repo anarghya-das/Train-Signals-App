@@ -9,6 +9,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import org.osmdroid.api.IMapController;
@@ -31,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private MyLocationNewOverlay myLocationoverlay;
     private GpsMyLocationProvider gp;
     private BackEnd backend;
+    private HashMap<String, GeoPoint> geoPointHashMap;
+    private ArrayList<Marker> markerCounter;
     private static final String reqURl = "http://192.168.0.106/jsonrender.php";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
@@ -40,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         //handle permissions first, before map is created. not depicted here
         permissionsCheck();
         //load/initialize the osmdroid configuration, this can be done
+        markerCounter = new ArrayList<>();
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         //setting this before the layout is inflated is a good idea
@@ -55,16 +60,16 @@ public class MainActivity extends AppCompatActivity {
         map.setMultiTouchControls(true);
 
         backend = new BackEnd();
-        HashMap<String, GeoPoint> gq = null;
+        geoPointHashMap = null;
         ArrayList<Signal> at = null;
         try {
             String gov = new RequestTaskPost().execute(govURl).get();
             String js = new RequestTask().execute(reqURl).get();
             if (js != null && gov != null) {
-                gq = backend.jsonPlot(js);
+                geoPointHashMap = backend.jsonPlot(js);
                 at = backend.getSignals(backend.jsonGov(gov));
 //                Log.d("List",at.toString());
-                addSignals(gq, at);
+                addSignals(geoPointHashMap, at);
             } else {
                 Toast.makeText(this, "Error connecting the DataBase!", Toast.LENGTH_SHORT);
             }
@@ -83,8 +88,8 @@ public class MainActivity extends AppCompatActivity {
         if (myLocationoverlay.getMyLocation() != null) {
             Toast.makeText(this, "Location: " + myLocationoverlay.getMyLocation().toString(), Toast.LENGTH_SHORT);
         }
-        if (gq != null && myLocationoverlay.getMyLocation() == null) {
-            mapController.setCenter(gq.get("KOGAR16"));
+        if (geoPointHashMap != null && myLocationoverlay.getMyLocation() == null) {
+            mapController.setCenter(geoPointHashMap.get("KOGAR16"));
         } else {
             mapController.animateTo(myLocationoverlay.getMyLocation());
         }
@@ -120,37 +125,44 @@ public class MainActivity extends AppCompatActivity {
                 marker.setIcon(getResources().getDrawable(R.drawable.green));
             } else if (color.equals("Yellow")) {
                 marker.setIcon(getResources().getDrawable(R.drawable.yellow));
-            } else if (color.equals("YellowYellow")){
+            } else if (color.equals("YellowYellow")) {
                 marker.setIcon(getResources().getDrawable(R.drawable.yellowyellow));
+            } else if (color.equals("Empty")) {
+                marker.setIcon(getResources().getDrawable(R.drawable.empty));
             }
         }
 
 //        map.getOverlays().clear();
         map.getOverlays().add(marker); map.getOverlays();
 //        map.invalidate();
+        markerCounter.add(marker);
     }
 
-    private boolean check(Signal id, HashMap<String,GeoPoint> s){
-        for (String so: s.keySet()){
-            if (so.equals(id.getSignalID())){
-                return true;
+    private String check(String id, ArrayList<Signal> s){
+        for (Signal so: s){
+            if(so.getSignalID().equals(id)){
+                return so.getSignalAspect();
             }
         }
-        return false;
+        return "Empty";
     }
     public void addSignals(HashMap<String, GeoPoint> gp, ArrayList<Signal> sg) {
-        Log.d("made",Integer.toString(backend.exists(backend.getSignalIds(sg),gp)));
-        int c=0;
-        for (Signal s: sg) {
-                if (check(s,gp)) {
-                    c++;
-                    addMarker(gp.get(s.getSignalID()), s.getSignalID(), s.getSignalAspect());
-                }
-                else{
-                    addMarker(gp.get(s.getSignalID()),s.getSignalID(),"");
-                }
+        for(String s: gp.keySet()){
+            if(check(s,sg).equals("Empty")) {
+                addMarker(gp.get(s), s, "Empty");
             }
-        Log.d("made",Integer.toString(c));
+            else{
+                addMarker(gp.get(s),s,check(s,sg));
+            }
+        }
+//        for (Signal s: sg) {
+//                if (check(s,gp)) {
+//                    addMarker(gp.get(s.getSignalID()), s.getSignalID(), s.getSignalAspect());
+//                }
+//                else{
+//                    addMarker(gp.get(s.getSignalID()),s.getSignalID(),"");
+//                }
+//            }
     }
 
         private void permissionsCheck() {
@@ -171,4 +183,21 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+//    public void sync(View view) {
+//        Button b= findViewById(R.id.button);
+//        b.setText("Clicked!");
+//        ArrayList<Signal> at = null;
+//        try {
+//            String gov = new RequestTaskPost().execute(govURl).get();
+//            if(gov!=null){
+//                at=backend.getSignals(backend.jsonGov(gov));
+//                addSignals(geoPointHashMap,at);
+//                Toast.makeText(this,"Updated",Toast.LENGTH_SHORT);
+//            }
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        } catch (ExecutionException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }
