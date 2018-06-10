@@ -100,6 +100,23 @@ public class BackEnd {
         return  sg;
     }
 
+    public ArrayList<String> getSignalIds(ArrayList<Signal> s){
+        ArrayList<String> f=new ArrayList<>();
+        for (Signal so: s){
+            f.add(so.getSignalID());
+        }
+        return f;
+    }
+    public int exists(ArrayList<String> a,HashMap<String,GeoPoint> h){
+        int count=0;
+        for (String s: h.keySet()){
+            if(a.contains(s)){
+                count++;
+            }
+        }
+        return count;
+    }
+
     public HashMap<String, GeoPoint> jsonPlot(String s){
         HashMap<String,GeoPoint> m= new HashMap<>();
         JsonValue jsonValue = Json.parse(s);
@@ -147,7 +164,7 @@ public class BackEnd {
         String s="Yellow";
         for (String channelDescription: a) {
             if (channelDescription.contains("RGKE")) {
-                s = "RED";
+                s = "Red";
             } else if (channelDescription.contains("HGKE")&&channelDescription.contains("HHGKE")) {
                 s = "YellowYellow";
             } else if (channelDescription.contains("DGKE")) {

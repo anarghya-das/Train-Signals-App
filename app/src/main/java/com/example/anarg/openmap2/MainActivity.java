@@ -4,13 +4,11 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
 import org.osmdroid.api.IMapController;
@@ -33,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private MyLocationNewOverlay myLocationoverlay;
     private GpsMyLocationProvider gp;
     private BackEnd backend;
-    private static final String reqURl = "http://192.168.43.115/jsonrender.php";
+    private static final String reqURl = "http://192.168.0.106/jsonrender.php";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
     @Override
@@ -65,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             if (js != null && gov != null) {
                 gq = backend.jsonPlot(js);
                 at = backend.getSignals(backend.jsonGov(gov));
-                Log.d("List",at.toString());
+//                Log.d("List",at.toString());
                 addSignals(gq, at);
             } else {
                 Toast.makeText(this, "Error connecting the DataBase!", Toast.LENGTH_SHORT);
@@ -79,14 +77,14 @@ public class MainActivity extends AppCompatActivity {
         myLocationoverlay = new MyLocationNewOverlay(gp, map);
         myLocationoverlay.enableMyLocation();
         mapController = map.getController();
-        mapController.setZoom(18.0f);
+        mapController.setZoom(15.6f);
         map.getOverlays().add(myLocationoverlay);
 
         if (myLocationoverlay.getMyLocation() != null) {
             Toast.makeText(this, "Location: " + myLocationoverlay.getMyLocation().toString(), Toast.LENGTH_SHORT);
         }
         if (gq != null && myLocationoverlay.getMyLocation() == null) {
-            mapController.setCenter(gq.get("KOGS2"));
+            mapController.setCenter(gq.get("KOGAR16"));
         } else {
             mapController.animateTo(myLocationoverlay.getMyLocation());
         }
@@ -128,21 +126,31 @@ public class MainActivity extends AppCompatActivity {
         }
 
 //        map.getOverlays().clear();
-        map.getOverlays().add(marker);
+        map.getOverlays().add(marker); map.getOverlays();
 //        map.invalidate();
     }
 
-    public void addSignals(HashMap<String, GeoPoint> gp, ArrayList<Signal> sg) {
-        for (String id : gp.keySet()) {
-            for (Signal s : sg) {
-                if (s.getSignalID().equals(id)) {
-                    addMarker(gp.get(id), id, s.getSignalAspect());
-                }
-                else{
-                    addMarker(gp.get(id),id,"YellowYellow");
-                }
+    private boolean check(Signal id, HashMap<String,GeoPoint> s){
+        for (String so: s.keySet()){
+            if (so.equals(id.getSignalID())){
+                return true;
             }
         }
+        return false;
+    }
+    public void addSignals(HashMap<String, GeoPoint> gp, ArrayList<Signal> sg) {
+        Log.d("made",Integer.toString(backend.exists(backend.getSignalIds(sg),gp)));
+        int c=0;
+        for (Signal s: sg) {
+                if (check(s,gp)) {
+                    c++;
+                    addMarker(gp.get(s.getSignalID()), s.getSignalID(), s.getSignalAspect());
+                }
+                else{
+                    addMarker(gp.get(s.getSignalID()),s.getSignalID(),"");
+                }
+            }
+        Log.d("made",Integer.toString(c));
     }
 
         private void permissionsCheck() {
