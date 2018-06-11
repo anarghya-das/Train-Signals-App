@@ -244,14 +244,5 @@ public class MainActivity extends AppCompatActivity {
             b.setText("Pause Sync");
             Toast.makeText(this,"Sync Resumed!",Toast.LENGTH_SHORT).show();
         }
-//        try {
-//            ArrayList<String> s=new RequestTask(backend,this).execute("",govURl).get();
-//            ArrayList<Signal> a=backend.getSignals(backend.jsonGov(s.get(0)));
-//            updateMarker(a);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        } catch (ExecutionException e) {
-//            e.printStackTrace();
-//        }
     }
 }

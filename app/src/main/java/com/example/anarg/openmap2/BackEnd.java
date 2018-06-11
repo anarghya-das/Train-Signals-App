@@ -1,25 +1,10 @@
 package com.example.anarg.openmap2;
 
-
-
-import android.view.ScaleGestureDetector;
-
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.fluent.Request;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.osmdroid.util.GeoPoint;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,21 +15,12 @@ public class BackEnd {
         ArrayList<Train> allInformation=new ArrayList<>();
         JsonValue jsonValue = Json.parse(s);
         JsonArray jsonArray = jsonValue.asArray();
-//        System.out.println("Information From Json ");
-//        System.out.println();
         for(int i=0;i<jsonArray.size();i++){
             JsonObject o=jsonArray.get(i).asObject();
             String direction=o.get("direction").asString();
             String locoNo=o.get("locoNo").asString();
             long trainID=o.get("trainId").asLong();
             String trainNo=Integer.toString(o.get("trainNo").asInt());
-
-            //Final Deatils
-//            System.out.println("Train Number: "+trainNo+locoNo);
-//            System.out.println("Station Code: ");
-//            System.out.println("Current Loc: ");
-//            System.out.println("Direction: "+direction);
-            //
             Train t=new Train(Integer.parseInt(trainNo+locoNo));
 
             JsonArray signals=o.get("signals").asArray();
@@ -79,12 +55,6 @@ public class BackEnd {
                     }
                 }
             }
-
-
-//            System.out.println("Train ID: "+trainID);
-//            System.out.println("Train Name: "+trainName);
-//            System.out.println("Status to be mapped: "+status);
-//            System.out.println();
             allInformation.add(t);
         }
         return allInformation;
@@ -132,33 +102,6 @@ public class BackEnd {
         }
         return m;
     }
-
-    public String postRequest(String url, String params, boolean json){
-        String response = "";
-        try{
-            ContentType type = ContentType.DEFAULT_TEXT;
-            if(json){
-                type = ContentType.APPLICATION_JSON;
-            }
-            response = Request.Post(url).bodyString(params, type).execute().returnContent().asString();
-        }catch(IOException ex){
-            ex.printStackTrace();
-        }
-        return response;
-    }
-
-    public String getRequest(String url){
-        String response = "";
-
-        try{
-            response = Request.Get(url).execute().returnContent().asString();
-        }catch(IOException ex){
-            ex.printStackTrace();
-        }
-
-        return response;
-    }
-
 
     private String signalColor(ArrayList<String> a) {
         String s="Yellow";
