@@ -17,13 +17,6 @@ public class Signal {
         return SignalAspect;
     }
 
-    public String getAspectFromId(String id){
-        if (id.equals(signalID)){
-            return signalID;
-        }
-        return "";
-    }
-
     @Override
     public String toString() {
         String s="Signal ID: "+signalID+"\n"+"Station Code: "+stnCode+"\n"+"Signal Name: "+SignalName+"\n"+"Signal Aspect: "+SignalAspect+"\n";
