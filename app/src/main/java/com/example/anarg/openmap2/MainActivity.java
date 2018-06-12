@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Signal> signals;
     private ArrayList<String> req;
     private ThreadControl threadControl;
-    private static final String reqURl = "http://192.168.0.106/jsonrender.php";
+    private static final String reqURl = "http://192.168.43.115/jsonrender.php";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
 

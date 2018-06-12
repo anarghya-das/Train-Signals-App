@@ -5,7 +5,6 @@ import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import org.osmdroid.util.GeoPoint;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -20,9 +19,17 @@ public class BackEnd {
             String direction=o.get("direction").asString();
             String locoNo=o.get("locoNo").asString();
             long trainID=o.get("trainId").asLong();
+            String trainName= o.get("trainName").asString();
             String trainNo=Integer.toString(o.get("trainNo").asInt());
-            Train t=new Train(Integer.parseInt(trainNo+locoNo));
+            Train t;
+            if (!trainName.isEmpty()) {
+                t = new Train(Integer.parseInt(trainNo + locoNo), trainName);
+            }
+            else {
+                t = new Train(Integer.parseInt(trainNo + locoNo), "No Name");
 
+            }
+            t.setDirection(direction);
             JsonArray signals=o.get("signals").asArray();
             String station="No name",trackName="No Name";
             JsonArray relays=null;
@@ -60,6 +67,15 @@ public class BackEnd {
         return allInformation;
     }
 
+    public HashMap<Integer,String> trainMap(ArrayList<Train> trains){
+        HashMap<Integer,String> t=new HashMap<>();
+        for (Train to: trains){
+            t.put(to.getTrainId(),to.getTrainName());
+        }
+        return t;
+    }
+
+
     public ArrayList<Signal> getSignals(ArrayList<Train> t){
         ArrayList<Signal> sg=new ArrayList<>();
         for (Train a: t){
@@ -77,6 +93,7 @@ public class BackEnd {
         }
         return f;
     }
+
     public int exists(ArrayList<String> a,HashMap<String,GeoPoint> h){
         int count=0;
         for (String s: h.keySet()){

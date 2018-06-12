@@ -3,13 +3,14 @@ package com.example.anarg.openmap2;
 import java.util.ArrayList;
 
 public class Train {
-    int trainId;
-    String stationCode, CurrentLoc;
-    ArrayList<Signal> signals;
+    private int trainId;
+    private String stationCode, CurrentLoc, trainName, direction;
+    private ArrayList<Signal> signals;
 
-    public Train(int id) {
+    public Train(int id,String tn) {
         signals=new ArrayList<>();
         trainId = id;
+        trainName=tn;
     }
 
     public void setStationCode(String stc) {
@@ -19,6 +20,14 @@ public class Train {
     public void setCurrentLoc(String loc) {
         CurrentLoc = loc;
     }
+
+    public void setDirection(String d){ direction=d; }
+
+    public int getTrainId(){ return trainId; }
+
+    public String getTrainName() { return trainName; }
+
+    public String getDirection() { return direction; }
 
     public void addSignals(Signal s){
         signals.add(s);
@@ -30,7 +39,6 @@ public class Train {
 
     @Override
     public String toString() {
-        String s="Train Number: "+trainId+"\n"+"Station Code: "+stationCode+"\n"+"Current Location: "+CurrentLoc+"\n"+"Signals:\n"+signals+"\n";
-        return s;
+        return "Train Number: "+trainId+"\n"+"Train Name: "+trainName+"\n"+"Station Code: "+stationCode+"\n"+"Current Location: "+CurrentLoc+"\n"+"Signals:\n"+signals+"\n";
     }
 }

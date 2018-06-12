@@ -1,3 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenMap2</string>
+    <string name="app_name">Signal Tracking System</string>
+    <string name="hint">Search Trains… </string>
+    <string name="hint2">Search Train Numbers… </string>
+    <string name="mainhint">Enter Train Name or Number and Press Enter</string>
+    <string name="firsthelp">Enter Train Name: </string>
+    <string name="secondhelp">Enter Train Number: </string>
+    <string name="buttontext">Enter</string>
+    <string name="buttontext2">Clear</string>
+    <string name="directionView">Direction: </string>
+        <string-array name="dogs_list">
+            <item>Bichon Frise</item>
+            <item>Border Collie</item>
+            <item>Border Terrier</item>
+            <item>Boxer</item>
+            <item>Chihuahua</item>
+            <item>German Shepherd</item>
+            <item>Golden Retriever</item>
+            <item>Greyhound</item>
+        </string-array>
 </resources>
