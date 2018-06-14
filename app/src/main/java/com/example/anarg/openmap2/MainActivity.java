@@ -6,6 +6,7 @@ import android.accounts.AccountManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -46,11 +47,13 @@ public class MainActivity extends AppCompatActivity {
     private GpsMyLocationProvider gp;
     private BackEnd backend;
     private HashMap<String, GeoPoint> geoPointHashMap;
-    private ArrayList<Marker> markerCounter;
+    private ArrayList<Marker> allMarkers;
+    private ArrayList<Marker> currentMarkers;
     private ArrayList<Signal> signals;
     private ArrayList<String> req;
     private ThreadControl threadControl;
-    private static final String reqURl = "http://192.168.43.115/jsonrender.php";
+    private String param;
+    private static final String reqURl = "http://anarghya321.pythonanywhere.com/api/railwaysignals.json";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
 
@@ -60,7 +63,8 @@ public class MainActivity extends AppCompatActivity {
         //handle permissions first, before map is created. not depicted here
             // Write you code here if permission already given.
             //load/initialize the osmdroid configuration, this can be done
-            markerCounter = new ArrayList<>();
+            allMarkers = new ArrayList<>();
+            currentMarkers= new ArrayList<>();
             geoPointHashMap = new HashMap<>();
             signals=new ArrayList<>();
             req=new ArrayList<>();
@@ -79,14 +83,16 @@ public class MainActivity extends AppCompatActivity {
             map.setMultiTouchControls(true);
             backend = new BackEnd();
             threadControl=new ThreadControl();
-            new RequestTask(backend,this,threadControl).execute(reqURl,govURl);
+            Intent i= getIntent();
+            param= i.getStringExtra("Signal");
+            new RequestTask(backend,this,threadControl,param).execute(reqURl,govURl);
             if (permissionsCheck()){
                 gp = new GpsMyLocationProvider(getApplicationContext());
                 myLocationoverlay = new MyLocationNewOverlay(gp, map);
                 myLocationoverlay.enableMyLocation();
                 map.getOverlays().add(myLocationoverlay);
             }else {
-                Toast.makeText(this,"Permission Not granted",Toast.LENGTH_SHORT).show();
+                exceptionRaised("Location Permission Not Granted!");
             }
     }
 
@@ -102,14 +108,15 @@ public class MainActivity extends AppCompatActivity {
         private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-                new RequestTask(backend, MainActivity.this,threadControl).execute("", govURl);
+                new RequestTask(backend, MainActivity.this,threadControl,param).execute("", govURl);
                 mHandler.postDelayed(timerTask, 1);
             }};
 
-    public void setMapCenter(HashMap<String,GeoPoint> a){
+    public void setMapCenter(){
         mapController = map.getController();
         mapController.setZoom(15.6f);
-        mapController.setCenter(a.get("KOGAR16"));
+        GeoPoint g=new GeoPoint(22.578802, 88.365743);
+        mapController.setCenter(g);
     }
 
     public void onResume() {
@@ -138,64 +145,76 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void addMarker(GeoPoint gp, String description, Signal s) {
-        Marker marker = new Marker(map);
-        marker.setPosition(gp);
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        marker.setTitle(description);
-        addColorSignal(s,marker);
+    private Marker configMarker(GeoPoint gp, String description, Signal s) {
+            Marker marker = new Marker(map);
+            marker.setPosition(gp);
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setTitle(description);
+            addColorSignal(s, marker);
+            return marker;
 //        map.getOverlays().clear();
-        map.getOverlays().add(marker); map.getOverlays();
 //        map.invalidate();
-        markerCounter.add(marker);
     }
 
     private void addColorSignal(Signal so,Marker marker){
 
         if (so==null){
             marker.setIcon(getResources().getDrawable(R.drawable.empty));
+            marker.setId("empty");
         } else if (so.getSignalAspect().equals("Red")){
             marker.setIcon(getResources().getDrawable(R.drawable.red));
+            marker.setId("Red");
         }else if (so.getSignalAspect().equals("Green")) {
             marker.setIcon(getResources().getDrawable(R.drawable.green));
+            marker.setId("Green");
         } else if (so.getSignalAspect().equals("Yellow")) {
             marker.setIcon(getResources().getDrawable(R.drawable.yellow));
+            marker.setId("Yellow");
         } else if (so.getSignalAspect().equals("YellowYellow")) {
             marker.setIcon(getResources().getDrawable(R.drawable.yellowyellow));
+            marker.setId("YellowYellow");
         }
 
     }
 
-    public  void updateMarker(ArrayList<Signal> s){
-        int c=0;
-        for (Signal so: s){
-            if(markerUpdateCheck(so)!=null){
-                c++;
-                addColorSignal(so,markerUpdateCheck(so));
-            }
-        }
-        Toast.makeText(this,"Updated "+Integer.toString(c)+" markers!",Toast.LENGTH_SHORT).show();
-    }
-    //Helper Method for updateMarker
-    private Marker markerUpdateCheck(Signal s) {
-        for (Marker m: markerCounter){
-            if(m.getTitle().equals(s.getSignalID())){
-                return m;
-            }
-        }
-        return null;
-    }
+//    public  void updateMarker(ArrayList<Signal> s){
+//        int c=0;
+//        for (Signal so: s){
+//            if(markerUpdateCheck(so)!=null){
+//                c++;
+//                addColorSignal(so,markerUpdateCheck(so));
+//            }
+//        }
+//        if (c!=0) {
+//            Toast.makeText(this, "Updated " + Integer.toString(c) + " markers!", Toast.LENGTH_SHORT).show();
+//        }
+//    }
+//    //Helper Method for updateMarker
+//    private Marker markerUpdateCheck(Signal s) {
+//        Log.d("sig", s.toString());
+//        for (Marker m: markerCounter){
+//            if(m.getTitle().equals(s.getSignalID())){
+//                return m;
+//            }
+//        }
+//        return null;
+//    }
+//
+//    public void addSignals(HashMap<String, GeoPoint> gp, ArrayList<Signal> sg) {
+//        for(String s: gp.keySet()){
+//            if(check(s,sg)!=null) {
+//                addMarker(gp.get(s), s, check(s,sg));
+//            }else{
+//                addMarker(gp.get(s),s,check(s,sg));
+//            }
+//        }
+//        if (markerCounter.size()==0){
+//            Toast.makeText(this, "No signals were found for this Train!", Toast.LENGTH_SHORT).show();
+//            threadControl.pause();
+//            mHandler.removeCallbacks(timerTask);
+//        }
+//    }
 
-    public void addSignals(HashMap<String, GeoPoint> gp, ArrayList<Signal> sg) {
-        for(String s: gp.keySet()){
-            if(check(s,sg)!=null) {
-                addMarker(gp.get(s), s, check(s,sg));
-            }
-            else{
-                addMarker(gp.get(s),s,check(s,sg));
-            }
-        }
-    }
     //Helper Method for addSignals
     private Signal check(String id, ArrayList<Signal> s){
         if(s!=null) {
@@ -244,5 +263,58 @@ public class MainActivity extends AppCompatActivity {
             b.setText("Pause Sync");
             Toast.makeText(this,"Sync Resumed!",Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void populateMarkers(HashMap<String, GeoPoint> h) {
+        for (String s: h.keySet()){
+            allMarkers.add(configMarker(h.get(s),s,null));
+        }
+    }
+
+    public void addMarker(Marker marker){ map.getOverlays().add(marker); }
+
+    public void removeMarkers(ArrayList<Marker> marker){
+        for (Marker m: marker) {
+            map.getOverlays().remove(m);
+        }
+    }
+
+    public void addInitialSignals(ArrayList<Signal> signals) {
+        for (Signal s: signals){
+            if (checkSignalWithMarker(s)!=null){
+                addMarker(checkSignalWithMarker(s));
+            }
+        }
+    }
+
+    private Marker checkSignalWithMarker(Signal s) {
+            for (Marker m : allMarkers) {
+                if (m.getTitle().equals(s.getSignalID())) {
+                    currentMarkers.add(m);
+                    return m;
+                }
+            }
+        return null;
+    }
+
+
+    public void updateSignals(ArrayList<Signal> signals) {
+        removeMarkers(currentMarkers);
+        currentMarkers.clear();
+        addInitialSignals(signals);
+        Toast.makeText(this,"Updated "+currentMarkers.size()+" Markers!",Toast.LENGTH_SHORT).show();
+    }
+    public void exceptionRaised(String s) {
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage(s)
+                .setTitle("Error");
+        builder.setNegativeButton("Exit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }

@@ -21,13 +21,13 @@ public class BackEnd {
             long trainID=o.get("trainId").asLong();
             String trainName= o.get("trainName").asString();
             String trainNo=Integer.toString(o.get("trainNo").asInt());
+            String trainNum=trainNo + locoNo;
             Train t;
-            if (!trainName.isEmpty()) {
-                t = new Train(Integer.parseInt(trainNo + locoNo), trainName);
+            if (!trainName.isEmpty()&&!trainNum.equals("0")) {
+                t = new Train(Integer.parseInt(trainNum), trainName);
             }
             else {
-                t = new Train(Integer.parseInt(trainNo + locoNo), "No Name");
-
+                t = new Train(0,null);
             }
             t.setDirection(direction);
             JsonArray signals=o.get("signals").asArray();
@@ -62,9 +62,31 @@ public class BackEnd {
                     }
                 }
             }
-            allInformation.add(t);
+            if(t.getTrainName()!=null) {
+                allInformation.add(t);
+            }
         }
         return allInformation;
+    }
+
+    public boolean checkTrainName(String t,String s){
+        ArrayList<Train> to=jsonGov(s);
+        for (Train c: to){
+            if (c.getTrainName().equals(t)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean checkTrainNumber(String t,String s){
+        ArrayList<Train> to=jsonGov(s);
+        for (Train c: to){
+            if (c.getTrainId()==Integer.parseInt(t)){
+                return true;
+            }
+        }
+        return false;
     }
 
     public HashMap<Integer,String> trainMap(ArrayList<Train> trains){
@@ -84,6 +106,14 @@ public class BackEnd {
             }
         }
         return  sg;
+    }
+    public Train getTrainFromName(String s,ArrayList<Train> t){
+        for (Train to: t){
+            if(to.getTrainName().equals(s)){
+                return to;
+            }
+        }
+        return null;
     }
 
     public ArrayList<String> getSignalIds(ArrayList<Signal> s){
@@ -112,8 +142,8 @@ public class BackEnd {
             JsonObject arrayObject=jsonArray.get(i).asObject();
             String signalId=arrayObject.get("signalId").asString();
             JsonObject coo=arrayObject.get("coordinate").asObject();
-            double latitude= Double.parseDouble(coo.get("latitude").asString());
-            double longitude= Double.parseDouble(coo.get("longitude").asString());
+            double latitude= coo.get("latitude").asDouble();
+            double longitude= coo.get("longitude").asDouble();
             GeoPoint gp=new GeoPoint(latitude,longitude);
             m.put(signalId,gp);
         }
@@ -133,4 +163,5 @@ public class BackEnd {
         }
         return  s;
     }
+
 }

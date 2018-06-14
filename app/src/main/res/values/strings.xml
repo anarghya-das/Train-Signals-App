@@ -4,19 +4,33 @@
     <string name="hint">Search Trains… </string>
     <string name="hint2">Search Train Numbers… </string>
     <string name="mainhint">Enter Train Name or Number and Press Enter</string>
-    <string name="firsthelp">Enter Train Name: </string>
-    <string name="secondhelp">Enter Train Number: </string>
+    <string name="firsthelp">Enter Train Name</string>
+    <string name="secondhelp">Enter Train Number</string>
     <string name="buttontext">Enter</string>
     <string name="buttontext2">Clear</string>
-    <string name="directionView">Direction: </string>
-        <string-array name="dogs_list">
-            <item>Bichon Frise</item>
-            <item>Border Collie</item>
-            <item>Border Terrier</item>
-            <item>Boxer</item>
-            <item>Chihuahua</item>
-            <item>German Shepherd</item>
-            <item>Golden Retriever</item>
-            <item>Greyhound</item>
-        </string-array>
+    <string name="phone">Enter Phone Number</string>
+    <string-array name="dogs_list">
+        <item>Bichon Frise</item>
+        <item>Border Collie</item>
+        <item>Border Terrier</item>
+        <item>Boxer</item>
+        <item>Chihuahua</item>
+        <item>German Shepherd</item>
+        <item>Golden Retriever</item>
+        <item>Greyhound</item>
+    </string-array>
+    <string name="title_activity_login">Sign in</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password (optional)</string>
+    <string name="action_sign_in">Sign in or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
 </resources>

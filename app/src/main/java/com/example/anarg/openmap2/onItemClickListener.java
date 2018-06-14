@@ -15,12 +15,14 @@ public class onItemClickListener implements AdapterView.OnItemClickListener {
     private AutoCompleteTextView autoCompleteTextView;
     private TextView textView;
     private String adapterCheck;
+    private MainScreenActivity m;
 
-    public onItemClickListener(ArrayList<Train> allTrains,AutoCompleteTextView autoCompleteTextView,TextView textView, String s){
+    public onItemClickListener(ArrayList<Train> allTrains,AutoCompleteTextView autoCompleteTextView,TextView textView, String s,MainScreenActivity m){
         this.allTrains=allTrains;
         this.autoCompleteTextView=autoCompleteTextView;
         this.textView=textView;
         this.adapterCheck=s;
+        this.m=m;
     }
 
     @SuppressLint("NewApi")
@@ -35,10 +37,11 @@ public class onItemClickListener implements AdapterView.OnItemClickListener {
         else if (adapterCheck.equals("adapter 2")){
             String s = (String) parent.getItemAtPosition(position);
             autoCompleteTextView.setText(findTrainame(s));
-            textView.setText("Direction: " + findDirection(findTrainame(s)));
+            textView.setText("Train Direction: " + findDirection(findTrainame(s)));
             textView.setVisibility(View.VISIBLE);
         }
     }
+
 
     private String findDirection(String s){
         for (Train t: allTrains){
