@@ -3,6 +3,8 @@ package com.example.anarg.openmap2;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.eclipsesource.json.Json;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -11,6 +13,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
 import java.io.ByteArrayOutputStream;
@@ -124,21 +129,49 @@ public class RequestTask  extends AsyncTask<String, String, ArrayList<String>> {
     protected void onPostExecute(ArrayList<String> result) {
         if (result==null){
             gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
-        }
-        if(result.size()==2) {
-            HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
-            Train t=b.getTrainFromName(param,b.jsonGov(result.get(1)));
-            Log.d("result", Integer.toString(h.size()));
-            gp.populateMarkers(h);
-            gp.addInitialSignals(t.getSignals());
-            gp.setMapCenter();
-        }
-        if (result.size()==1){
+        }else {
+            Log.d("result", Integer.toString(result.size()));
+//        if (vaildCheck(result)){
+//            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
+//        }
+            if (result.size() == 2) {
+                HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
+                Train t = b.getTrainFromName(param, b.jsonGov(result.get(1)));
+                Log.d("result", Integer.toString(h.size()));
+                gp.populateMarkers(h);
+                gp.addInitialSignals(t.getSignals());
+                gp.setMapCenter();
+            }
+            if (result.size() == 1) {
                 if (!result.get(0).equals("")) {
                     Log.d("list", "RUN");
-                    Train t=b.getTrainFromName(param,b.jsonGov(result.get(0)));
+                    Train t = b.getTrainFromName(param, b.jsonGov(result.get(0)));
                     gp.updateSignals(t.getSignals());
                 }
+            }
+        }
+    }
+
+    public boolean isJSONValid(String test) {
+        try {
+            new JSONObject(test);
+        } catch (JSONException ex) {
+            // edited, to include @Arthur's comment
+            // e.g. in case JSONArray is valid as well...
+            try {
+                new JSONArray(test);
+            } catch (JSONException ex1) {
+                return false;
+            }
+        }
+        return true;
+    }
+    private boolean vaildCheck(ArrayList<String> result){
+        if (result==null|| result.get(0)==null||result.get(1)==null|| !isJSONValid(result.get(0)) || !isJSONValid(result.get(1))){
+            return false;
+        }
+        else {
+            return true;
         }
     }
 }

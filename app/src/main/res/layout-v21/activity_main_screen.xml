@@ -32,6 +32,9 @@
 
         <AutoCompleteTextView
             android:id="@+id/autocompleteView"
+            android:inputType="text"
+            android:maxLines="1"
+            android:imeOptions="actionDone"
             android:layout_width="300sp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -71,6 +74,8 @@
         <AutoCompleteTextView
             android:id="@+id/autocompleteView2"
             android:layout_width="210sp"
+            android:imeOptions="actionDone"
+            android:maxLines="1"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:hint="@string/hint2"
@@ -95,6 +100,47 @@
             android:onClick="clear"
             android:src="@drawable/clear" />
 
+
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="10sp"
+            android:text="@string/thirdhelp"
+            android:textAppearance="@android:style/TextAppearance.Material.Menu"
+            android:textColor="#212121" />
+
+        <AutoCompleteTextView
+            android:id="@+id/autocompleteView3"
+            android:layout_width="210sp"
+            android:imeOptions="actionDone"
+            android:maxLines="1"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:hint="@string/hint2"
+            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|end"
+            android:layout_marginRight="100dp"
+            android:layout_marginTop="-30sp"
+            android:onClick="dropDown2"
+            android:src="@drawable/down" />
+
+        <ImageView
+            android:id="@+id/clear3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginRight="82dp"
+            android:layout_marginTop="-22dp"
+            android:onClick="clear"
+            android:src="@drawable/clear" />
+
+
         <TextView
             android:id="@+id/textView3"
             android:layout_width="wrap_content"
@@ -110,6 +156,7 @@
             android:id="@+id/editText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxLines="1"
             android:layout_gravity="center"
             android:ems="10"
             android:hint="Phone Number"

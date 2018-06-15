@@ -17,21 +17,21 @@ public class BackEnd {
         for(int i=0;i<jsonArray.size();i++){
             JsonObject o=jsonArray.get(i).asObject();
             String direction=o.get("direction").asString();
-            String locoNo=o.get("locoNo").asString();
-            long trainID=o.get("trainId").asLong();
+//            String locoNo=o.get("locoNo").asString();
+//            long trainID=o.get("trainId").asLong();
+            String trackName=o.get("trackName").asString();
             String trainName= o.get("trainName").asString();
-            String trainNo=Integer.toString(o.get("trainNo").asInt());
-            String trainNum=trainNo + locoNo;
+            String trainNum=Integer.toString(o.get("trainNo").asInt());
             Train t;
             if (!trainName.isEmpty()&&!trainNum.equals("0")) {
-                t = new Train(Integer.parseInt(trainNum), trainName);
+                t = new Train(Integer.parseInt(trainNum), trainName,trackName);
             }
             else {
-                t = new Train(0,null);
+                t = new Train(0,null,null);
             }
             t.setDirection(direction);
-            JsonArray signals=o.get("signals").asArray();
-            String station="No name",trackName="No Name";
+            JsonArray signals=o.get("zSignals").asArray();
+            String station="No name";
             JsonArray relays=null;
             if(signals.size()!=0) {
                 for (int j = 0; j < signals.size(); j++) {
@@ -40,7 +40,7 @@ public class BackEnd {
                     station = o1.get("station").asString();
 //                    System.out.println("Signal "+(j+1)+" ahead (Stn Code): "+station);
 //                    System.out.println("Track Name: "+trackName);
-                    JsonObject aspectSignal = o1.get("toAspectSignal").asObject();
+                    JsonObject aspectSignal = o1.get("ztoAspectSignal").asObject();
                     String signalName=aspectSignal.get("objectName").asString();
 //                    System.out.println("Signal "+(j+1)+" ahead Signal Name: "+signalName);
                     if (aspectSignal.get("relays").isArray()) {
@@ -83,6 +83,15 @@ public class BackEnd {
         ArrayList<Train> to=jsonGov(s);
         for (Train c: to){
             if (c.getTrainId()==Integer.parseInt(t)){
+                return true;
+            }
+        }
+        return false;
+    }
+    public boolean checkTrackName(String param3,String s) {
+        ArrayList<Train> to=jsonGov(s);
+        for (Train c: to){
+            if (c.getTrackName().equals(param3)){
                 return true;
             }
         }

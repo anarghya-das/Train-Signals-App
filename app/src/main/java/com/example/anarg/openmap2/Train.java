@@ -4,12 +4,13 @@ import java.util.ArrayList;
 
 public class Train {
     private int trainId;
-    private String stationCode, CurrentLoc, trainName, direction;
+    private String stationCode, CurrentLoc, trainName, direction,trackName;
     private ArrayList<Signal> signals;
 
-    public Train(int id,String tn) {
+    public Train(int id,String tn,String trackName) {
         signals=new ArrayList<>();
         trainId = id;
+        this.trackName=trackName;
         trainName=tn;
     }
 
@@ -28,6 +29,8 @@ public class Train {
     public String getTrainName() { return trainName; }
 
     public String getDirection() { return direction; }
+
+    public String getTrackName(){ return  trackName; }
 
     public void addSignals(Signal s){
         signals.add(s);

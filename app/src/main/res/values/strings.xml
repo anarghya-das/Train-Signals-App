@@ -3,9 +3,11 @@
     <string name="app_name">Signal Tracking System</string>
     <string name="hint">Search Trains… </string>
     <string name="hint2">Search Train Numbers… </string>
+    <string name="hint3">Search Track Names…</string>
     <string name="mainhint">Enter Train Name or Number and Press Enter</string>
     <string name="firsthelp">Enter Train Name</string>
     <string name="secondhelp">Enter Train Number</string>
+    <string name="thirdhelp">Enter Track Name</string>
     <string name="buttontext">Enter</string>
     <string name="buttontext2">Clear</string>
     <string name="phone">Enter Phone Number</string>

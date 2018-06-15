@@ -82,15 +82,14 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
 
     @Override
     protected void onPostExecute(String s) {
-//        Log.d("reply", s);
         if (s==null){
-            Log.d("exceptionRaised", ":(");
             m.exceptionRaised();
         }
         else {
             ArrayList<Train> allTrains = backEnd.jsonGov(s);
             m.createTrainNameView(trainArray(allTrains), allTrains);
             m.createTrainIDView(trainID(allTrains), allTrains);
+            m.createTrackNameView(trackName(allTrains),allTrains);
         }
     }
 
@@ -116,5 +115,13 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
                 ids[i] = Integer.toString(t.get(i).getTrainId());
         }
         return ids;
+    }
+
+    private String[] trackName(ArrayList<Train> t){
+        String[] trackName=new String[t.size()];
+        for (int i=0;i<t.size();i++){
+            trackName[i]=t.get(i).getTrackName();
+        }
+        return trackName;
     }
 }
