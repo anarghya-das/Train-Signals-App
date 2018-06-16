@@ -2,6 +2,7 @@ package com.example.anarg.openmap2;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.eclipsesource.json.Json;
 
@@ -130,7 +131,6 @@ public class RequestTask  extends AsyncTask<String, String, ArrayList<String>> {
         if (result==null){
             gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
         }else {
-            Log.d("result", Integer.toString(result.size()));
 //        if (vaildCheck(result)){
 //            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
 //        }
@@ -146,7 +146,12 @@ public class RequestTask  extends AsyncTask<String, String, ArrayList<String>> {
                 if (!result.get(0).equals("")) {
                     Log.d("list", "RUN");
                     Train t = b.getTrainFromName(param, b.jsonGov(result.get(0)));
-                    gp.updateSignals(t.getSignals());
+                    if (t==null){
+                        Toast.makeText(gp,"No Signal Found",Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        gp.updateSignals(t.getSignals());
+                    }
                 }
             }
         }

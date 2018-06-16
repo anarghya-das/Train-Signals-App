@@ -30,10 +30,10 @@ public class ExampleUnitTest {
         BackEnd b=new BackEnd();
 //        System.out.println(b.jsonPlot(HttpGet("http://anarghya321.pythonanywhere.com/api/railwaysignals.json")));
         System.out.println(HttpPost("http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead"));
-        ArrayList<Signal> s=new ArrayList<>();
-        if (s.size()==0) {
-            System.out.println(s.toString());
-        }
+//        ArrayList<Signal> s=new ArrayList<>();
+//        if (s.size()==0) {
+//            System.out.println(s.toString());
+//        }
 //        System.out.println(HttpPost("http://httpbin.org/post"));
     }
     private String HttpGet(String s){

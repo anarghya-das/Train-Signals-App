@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -45,7 +47,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private ArrayList<String> req;
     private ThreadControl threadControl;
     private String param;
-    private static final String reqURl = "http://anarghya321.pythonanywhere.com/api/railwaysignals.json";
+    private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
 
@@ -85,8 +87,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
                 myLocationoverlay.enableMyLocation();
                 map.getOverlays().add(myLocationoverlay);
                 map.invalidate();
-            }else {
-                exceptionRaised("Location Permission Not Granted!");
             }
     }
 
@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             @Override
             public void run() {
                 new RequestTask(backend, MainActivity.this,threadControl,param).execute("", govURl);
+//                locationToast();
                 mHandler.postDelayed(timerTask, 1);
             }};
 
@@ -111,6 +112,25 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         mapController.setZoom(15.6f);
         GeoPoint g=new GeoPoint(22.578802, 88.365743);
         mapController.setCenter(g);
+    }
+
+    private void locationToast(){
+        if (myLocationoverlay==null){
+            Toast.makeText(this,"Enable Location permission to Use this!",Toast.LENGTH_SHORT).show();
+        }
+        else {
+            mapController = map.getController();
+            mapController.setZoom(15.6f);
+            if (myLocationoverlay.getMyLocation() != null) {
+                IGeoPoint loc = myLocationoverlay.getMyLocation();
+//            double lat = myLocationoverlay.getMyLocation().getLatitude();
+//            double lo = myLocationoverlay.getMyLocation().getLongitude();
+                mapController.animateTo(loc);
+//            Toast.makeText(this, "Latitude: " + lat + ", Longitude: " + lo, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Location Not Found!", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     public void onResume() {
@@ -187,19 +207,20 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
     public void sync(View view) {
-        Button b= findViewById(R.id.button);
-        if(b.getText().equals("Pause Sync")){
-            threadControl.pause();
-            mHandler.removeCallbacks(timerTask);
-            b.setText("Resume Sync");
-            Toast.makeText(this,"Sync Paused!",Toast.LENGTH_SHORT).show();
-        }
-        else if (b.getText().equals("Resume Sync")){
-            mHandler.post(timerTask);
-            threadControl.resume();
-            b.setText("Pause Sync");
-            Toast.makeText(this,"Sync Resumed!",Toast.LENGTH_SHORT).show();
-        }
+        locationToast();
+//        Button b= findViewById(R.id.button);
+//        if(b.getText().equals("Pause Sync")){
+//            threadControl.pause();
+//            mHandler.removeCallbacks(timerTask);
+//            b.setText("Resume Sync");
+//            Toast.makeText(this,"Sync Paused!",Toast.LENGTH_SHORT).show();
+//        }
+//        else if (b.getText().equals("Resume Sync")){
+//            mHandler.post(timerTask);
+//            threadControl.resume();
+//            b.setText("Pause Sync");
+//            Toast.makeText(this,"Sync Resumed!",Toast.LENGTH_SHORT).show();
+//        }
     }
 
     public void populateMarkers(HashMap<String, GeoPoint> h) {
@@ -297,12 +318,34 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
             }
             return false;
-        } else {
-//                gp = new GpsMyLocationProvider(getApplicationContext());
+        }
+        else {
             return true;
         }
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    Toast.makeText(this,"Location Sharing Enabled!",Toast.LENGTH_SHORT).show();
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Toast.makeText(this,"Location Sharing Disabled!",Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
 
+            // other 'case' lines to check for other
+            // permissions this app might request.
+        }
+    }
     public void exceptionRaised(String s) {
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
         builder.setMessage(s)
@@ -315,5 +358,15 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         });
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event)
+    {
+        if ((keyCode == KeyEvent.KEYCODE_BACK))
+        {
+            threadControl.cancel();
+            finish();
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
