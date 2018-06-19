@@ -117,6 +117,9 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
             } else if (backEnd.checkTrainName(param, json) && backEnd.checkTrainNumber(param2, json) && backEnd.checkTrackName(param3, json)) {
                 Intent i = new Intent(this, MainActivity.class);
                 i.putExtra("Signal", param);
+                i.putExtra("TrainNumber",Integer.parseInt(param2));
+                i.putExtra("TrackName",param3);
+                i.putExtra("Phone",num);
                 startActivity(i);
             } else {
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();

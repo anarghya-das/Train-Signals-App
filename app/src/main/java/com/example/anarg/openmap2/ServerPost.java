@@ -1,8 +1,6 @@
 package com.example.anarg.openmap2;
 
-import android.annotation.SuppressLint;
 import android.os.AsyncTask;
-import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -10,40 +8,21 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 
-
-public class RequestTaskPost extends AsyncTask<String,String,String> {
-    private BackEnd backEnd;
-    @SuppressLint("StaticFieldLeak")
-    MainScreenActivity m;
-
-    RequestTaskPost(MainScreenActivity m){
-        backEnd=new BackEnd();
-        this.m=m;
-    }
-
+public class ServerPost extends AsyncTask<String,Void,String> {
     @Override
     protected String doInBackground(String... strings) {
         try {
-            return post(strings[0],"asd");
-        } catch (Exception e) {
+            return post(strings[0],strings[1]);
+        } catch (IOException e) {
             return null;
         }
     }
 
     @Override
     protected void onPostExecute(String s) {
-        if (s==null){
-            m.exceptionRaised();
-        }
-        else {
-            ArrayList<Train> allTrains = backEnd.jsonGov(s);
-            m.createTrainNameView(trainArray(allTrains), allTrains);
-            m.createTrainIDView(trainID(allTrains), allTrains);
-            m.createTrackNameView(trackName(allTrains),allTrains);
-        }
     }
+
     private String post(String u, String json) throws IOException {
         String response;
             // This is getting the url from the string we passed in
@@ -79,6 +58,7 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
                 InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
 
                 response = convertInputStreamToString(inputStream);
+
                 if (response==null||response.isEmpty()){
                     throw new IOException();
                 }
@@ -97,31 +77,5 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
     private String convertInputStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
-    }
-
-
-    //Helper Method
-    private String[] trainArray(ArrayList<Train> t){
-        String[] trains=new String[t.size()];
-        for (int i=0;i<t.size();i++){
-                trains[i]=t.get(i).getTrainName();
-        }
-        return trains;
-    }
-
-    private String[] trainID(ArrayList<Train> t){
-        String[] ids=new String[t.size()];
-        for (int i=0;i<t.size();i++){
-                ids[i] = Integer.toString(t.get(i).getTrainId());
-        }
-        return ids;
-    }
-
-    private String[] trackName(ArrayList<Train> t){
-        String[] trackName=new String[t.size()];
-        for (int i=0;i<t.size();i++){
-            trackName[i]=t.get(i).getTrackName();
-        }
-        return trackName;
     }
 }

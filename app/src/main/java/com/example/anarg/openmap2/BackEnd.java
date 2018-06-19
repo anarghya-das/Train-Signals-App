@@ -31,6 +31,7 @@ public class BackEnd {
             }
             t.setDirection(direction);
             JsonArray signals=o.get("zSignals").asArray();
+            int index;
             String station="No name";
             JsonArray relays=null;
             if(signals.size()!=0) {
@@ -38,6 +39,7 @@ public class BackEnd {
                     JsonObject o1 = signals.get(j).asObject();
                     trackName = o1.get("trackName").asString();
                     station = o1.get("station").asString();
+                    index= o1.get("index").asInt();
 //                    System.out.println("Signal "+(j+1)+" ahead (Stn Code): "+station);
 //                    System.out.println("Track Name: "+trackName);
                     JsonObject aspectSignal = o1.get("ztoAspectSignal").asObject();
@@ -55,7 +57,7 @@ public class BackEnd {
                         }
 //                        System.out.println("Signal "+(j+1)+" Aspect: "+signalColor(channelDescriptions));
                         String aspect=signalColor(channelDescriptions);
-                        Signal sig=new Signal(station,signalName,aspect);
+                        Signal sig=new Signal(station,signalName,aspect,index);
                         if(sig!=null) {
                             t.addSignals(sig);
                         }

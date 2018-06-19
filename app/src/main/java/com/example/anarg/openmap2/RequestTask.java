@@ -1,129 +1,65 @@
 package com.example.anarg.openmap2;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
-
-import com.eclipsesource.json.Json;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class RequestTask  extends AsyncTask<String, String, ArrayList<String>> {
+
+public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
     private BackEnd b;
+    @SuppressLint("StaticFieldLeak")
     private MainActivity gp;
-    private ArrayList<String> check;
     private ThreadControl thread;
     private String param;
+    private static final String REQUEST_METHOD = "GET";
+    private static final int READ_TIMEOUT = 15000;
+    private static final int CONNECTION_TIMEOUT = 15000;
 
 
-    public RequestTask(BackEnd b,MainActivity gp,ThreadControl t,String param){
+    RequestTask(BackEnd b, MainActivity gp, ThreadControl t, String param){
         this.b=b;
         this.gp=gp;
-        check=new ArrayList<>();
         thread=t;
         this.param=param;
     }
 
     @Override
     protected ArrayList<String> doInBackground(String... uri) {
-        ArrayList<String> a=new ArrayList<>();
-        boolean t=true;
-        try {
-            while (t) {
-                thread.waitIfPaused();
-                //Stop work if control is cancelled.
-                if (thread.isCancelled()) {
-                    break;
-                }
-                if (!uri[0].equals("") && !uri[1].equals("")) {
-                    a.add(HttpGet(uri[0]));
-                    a.add(HttpPost(uri[1]));
-                } else {
-                    check = gp.getReq();
-                    String s = HttpPost(uri[1]);
-                    if (check.size() == 0) {
-                        check.add(s);
-                    } else {
-                        check.add(s);
-                        Log.d("list", Integer.toString(check.size()));
-                        int l = check.size();
-                        if (s.equals(check.get(l - 2))) {
-                            a.add("");
-                        } else {
-                            a.add(HttpPost(uri[1]));
-                        }
-                        check.add(s);
-                        gp.setReq(check);
+        ArrayList<String> a = new ArrayList<>();
+        boolean t = true;
+            try {
+                while (t) {
+                    thread.waitIfPaused();
+                    //Stop work if control is cancelled.
+                    if (thread.isCancelled()) {
+                        break;
                     }
+                    if (!uri[0].equals("") && !uri[1].equals("")) {
+                        a.add(get(uri[0]));
+                        a.add(post(uri[1],"asd"));
+                    } else {
+                        String s = post(uri[1],"asd");
+                        a.add(s);
+                    }
+                    t = false;
                 }
-                t = false;
+            } catch (Exception e) {
+                return null;
             }
-        }catch (Exception e){
-            return null;
-        }
-        return a;
-    }
-
-    private String HttpPost(String s) throws IOException,NullPointerException{
-        HttpClient httpClient= new DefaultHttpClient();
-        HttpPost httpPost;
-        HttpResponse response;
-        String resString=null;
-        httpPost=new HttpPost(s);
-        response= httpClient.execute(httpPost);
-        StatusLine statusLine = response.getStatusLine();
-        if(statusLine.getStatusCode() == HttpStatus.SC_OK){
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            response.getEntity().writeTo(out);
-            resString = out.toString();
-            out.close();
-        } else{
-            //Closes the connection.
-            response.getEntity().getContent().close();
-            throw new IOException(statusLine.getReasonPhrase());
-        }
-        if (resString==null || resString.isEmpty()){
-            throw new NullPointerException();
-        }
-        return resString;
-    }
-
-    private String HttpGet(String s) throws IOException, NullPointerException{
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpResponse response;
-        String responseString = null;
-        response = httpclient.execute(new HttpGet(s));
-        StatusLine statusLine = response.getStatusLine();
-        if(statusLine.getStatusCode() == HttpStatus.SC_OK){
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            response.getEntity().writeTo(out);
-            responseString = out.toString();
-            out.close();
-        } else{
-            //Closes the connection.
-            response.getEntity().getContent().close();
-            throw new IOException(statusLine.getReasonPhrase());
-        }
-        if (responseString==null || responseString.isEmpty()){
-            throw new NullPointerException();
-        }
-        return responseString;
+            return a;
     }
 
     @Override
@@ -131,52 +67,114 @@ public class RequestTask  extends AsyncTask<String, String, ArrayList<String>> {
         if (result==null){
             gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
         }else {
-//        if (vaildCheck(result)){
-//            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
-//        }
             if (result.size() == 2) {
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 Train t = b.getTrainFromName(param, b.jsonGov(result.get(1)));
-                Log.d("result", Integer.toString(h.size()));
                 gp.populateMarkers(h);
                 gp.addInitialSignals(t.getSignals());
                 gp.setMapCenter();
             }
             if (result.size() == 1) {
                 if (!result.get(0).equals("")) {
-                    Log.d("list", "RUN");
                     Train t = b.getTrainFromName(param, b.jsonGov(result.get(0)));
-                    if (t==null){
-                        Toast.makeText(gp,"No Signal Found",Toast.LENGTH_SHORT).show();
-                    }
-                    else {
+                    if (t!=null){
+                        Log.d("list", "RUN");
                         gp.updateSignals(t.getSignals());
                     }
                 }
             }
         }
     }
+    private String post(String u, String json) throws IOException {
+        String response;
+            // This is getting the url from the string we passed in
+            URL url = new URL(u);
 
-    public boolean isJSONValid(String test) {
-        try {
-            new JSONObject(test);
-        } catch (JSONException ex) {
-            // edited, to include @Arthur's comment
-            // e.g. in case JSONArray is valid as well...
-            try {
-                new JSONArray(test);
-            } catch (JSONException ex1) {
-                return false;
+            // Create the urlConnection
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+
+            urlConnection.setDoInput(true);
+            urlConnection.setDoOutput(true);
+
+            urlConnection.setRequestProperty("Content-Type", "application/json");
+
+            urlConnection.setRequestMethod("POST");
+
+
+            // OPTIONAL - Sets an authorization header
+            urlConnection.setRequestProperty("Authorization", "someAuthString");
+
+            // Send the post body
+            if (json != null&&!json.isEmpty()) {
+                OutputStreamWriter writer = new OutputStreamWriter(urlConnection.getOutputStream());
+                writer.write(json);
+                writer.flush();
             }
-        }
-        return true;
+
+            int statusCode = urlConnection.getResponseCode();
+
+
+            if (statusCode ==  200) {
+
+                InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
+
+                response = convertInputStreamToString(inputStream);
+                if (response==null || response.isEmpty()){
+                    throw new IOException();
+                }
+            }
+            // From here you can convert the string to JSON with whatever JSON parser you like to use
+            // After converting the string to JSON, I call my custom callback. You can follow this process too, or you can implement the onPostExecute(Result) method
+            else {
+                // Status code is not 200
+                // Do something to handle the error
+                throw new IOException();
+            }
+        return response;
     }
-    private boolean vaildCheck(ArrayList<String> result){
-        if (result==null|| result.get(0)==null||result.get(1)==null|| !isJSONValid(result.get(0)) || !isJSONValid(result.get(1))){
-            return false;
-        }
-        else {
-            return true;
-        }
+
+    private String convertInputStreamToString(java.io.InputStream is) {
+        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+        return s.hasNext() ? s.next() : "";
     }
+
+    private String get(String url) throws IOException {
+        String result;
+        String inputLine;
+            //Create a URL object holding our url
+            URL myUrl = new URL(url);
+            //Create a connection
+            HttpURLConnection connection =(HttpURLConnection)
+                    myUrl.openConnection();
+            //Set methods and timeouts
+            connection.setRequestMethod(REQUEST_METHOD);
+            connection.setReadTimeout(READ_TIMEOUT);
+            connection.setConnectTimeout(CONNECTION_TIMEOUT);
+
+            //Connect to our url
+            connection.connect();
+            //Create a new InputStreamReader
+            InputStreamReader streamReader = new
+                    InputStreamReader(connection.getInputStream());
+            //Create a new buffered reader and String Builder
+            BufferedReader reader = new BufferedReader(streamReader);
+            StringBuilder stringBuilder = new StringBuilder();
+            //Check if the line we are reading is not null
+            while((inputLine = reader.readLine()) != null){
+                stringBuilder.append(inputLine);
+            }
+            //Close our InputStream and Buffered reader
+            reader.close();
+            streamReader.close();
+            //Set our result equal to our stringBuilder
+            result = stringBuilder.toString();
+
+            if (result.isEmpty()){
+                throw new IOException();
+            }
+
+        return result;
+    }
+
 }

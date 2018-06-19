@@ -1,13 +1,17 @@
 package com.example.anarg.openmap2;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -18,6 +22,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import com.eclipsesource.json.JsonObject;
 
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
@@ -31,6 +37,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends AppCompatActivity { //AppCompatActivity
@@ -38,72 +45,100 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private MapView map = null;
     private IMapController mapController;
     private MyLocationNewOverlay myLocationoverlay;
-    private GpsMyLocationProvider gp;
     private BackEnd backend;
-    private HashMap<String, GeoPoint> geoPointHashMap;
     private ArrayList<Marker> allMarkers;
     private ArrayList<Marker> currentMarkers;
     private ArrayList<Signal> currentSignals;
-    private ArrayList<String> req;
     private ThreadControl threadControl;
-    private String param;
+    private String trainName,trackName;
+    private int trainNo;
+    private long phone;
+    private String android_id;
+    private double user_lat,user_long;
     private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
+    private boolean soundCheck;
+    private static MediaPlayer mp;
+    private boolean locationPermission;
 
 
+    @SuppressLint("HardwareIds")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 //        setTraceLifecycle(true);
         //handle permissions first, before map is created. not depicted here
-            // Write you code here if permission already given.
-            //load/initialize the osmdroid configuration, this can be done
-            allMarkers = new ArrayList<>();
-            currentMarkers= new ArrayList<>();
-            geoPointHashMap = new HashMap<>();
-            currentSignals=new ArrayList<>();
-            req=new ArrayList<>();
-            Context ctx = getApplicationContext();
-            Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-            //setting this before the layout is inflated is a good idea
-            //it 'should' ensure that the map has a writable location for the map cache, even without permissions
-            //if no tiles are displayed, you can try overriding the cache path using Configuration.getInstance().setCachePath
-            //see also StorageUtils
-            //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
-            //inflate and create the map
-            setContentView(R.layout.activity_main);
-            map = findViewById(R.id.map);
-            map.setTileSource(TileSourceFactory.MAPNIK);
-            map.setBuiltInZoomControls(true);
-            map.setMultiTouchControls(true);
-            backend = new BackEnd();
-            threadControl=new ThreadControl();
-            Intent i= getIntent();
-            param= i.getStringExtra("Signal");
-            new RequestTask(backend,this,threadControl,param).execute(reqURl,govURl);
-            if (permissionsCheck()){
-                gp = new GpsMyLocationProvider(getApplicationContext());
-                myLocationoverlay = new MyLocationNewOverlay(gp, map);
-                myLocationoverlay.enableMyLocation();
-                map.getOverlays().add(myLocationoverlay);
-                map.invalidate();
-            }
+        // Write you code here if permission already given.
+        //load/initialize the osmdroid configuration, this can be done
+        soundCheck=false;
+        locationPermission=false;
+        allMarkers = new ArrayList<>();
+        currentMarkers = new ArrayList<>();
+        currentSignals = new ArrayList<>();
+        mp= MediaPlayer.create(this,R.raw.sound);
+        Context ctx = getApplicationContext();
+        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+        //setting this before the layout is inflated is a good idea
+        //it 'should' ensure that the map has a writable location for the map cache, even without permissions
+        //if no tiles are displayed, you can try overriding the cache path using Configuration.getInstance().setCachePath
+        //see also StorageUtils
+        //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
+        //inflate and create the map
+        setContentView(R.layout.activity_main);
+        map = findViewById(R.id.map);
+        map.setTileSource(TileSourceFactory.MAPNIK);
+        map.setBuiltInZoomControls(true);
+        map.setMultiTouchControls(true);
+        backend = new BackEnd();
+        threadControl = new ThreadControl();
+        Intent i = getIntent();
+        user_long=0.0;
+        user_long=0.0;
+        trainName = i.getStringExtra("Signal");
+        trainNo = i.getIntExtra("TrainNumber",0);
+        trackName = i.getStringExtra("TrackName");
+        phone = i.getLongExtra("Phone", 0);
+        android_id = Settings.Secure.getString(this.getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+        new RequestTask(backend, this, threadControl, trainName).execute(reqURl, govURl);
+        askPermission(Manifest.permission.ACCESS_FINE_LOCATION,MY_PERMISSIONS_REQUEST_LOCATION);
+        if (locationPermission){
+            GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
+            myLocationoverlay = new MyLocationNewOverlay(gp, map);
+            myLocationoverlay.enableMyLocation();
+            myLocationoverlay.setDrawAccuracyEnabled(false);
+            map.getOverlays().add(myLocationoverlay);
+            map.invalidate();
+        }
     }
 
-    public ArrayList<String> getReq(){
-        return req;
-    }
-
-    public void setReq(ArrayList<String> r){
-        this.req=r;
+    private String jsonPost(){
+        JsonObject o=new JsonObject();
+        o.add("deviceId",android_id);
+        JsonObject o2=new JsonObject();
+        o2.add("trainNo",trainNo);
+        o2.add("phone",phone);
+        o2.add("trainName",trainName);
+        o2.add("trackName",trackName);
+        o.add("info",o2);
+        JsonObject o3=new JsonObject();
+        o3.add("latitude",user_lat);
+        o3.add("longitude",user_long);
+        o.add("coordinate",o3);
+//        Log.d("worksend", o.toString());
+        return o.toString();
     }
 
         private Handler mHandler = new Handler();
         private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-                new RequestTask(backend, MainActivity.this,threadControl,param).execute("", govURl);
-//                locationToast();
+                new RequestTask(backend, MainActivity.this, threadControl, trainName).execute("", govURl);
+                if (checkCurrentLocation()){
+                    Log.d("location", "congo");
+                    new ServerPost().execute(backEndServer,jsonPost());
+                }
                 mHandler.postDelayed(timerTask, 1);
             }};
 
@@ -114,19 +149,40 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         mapController.setCenter(g);
     }
 
-    private void locationToast(){
-        if (myLocationoverlay==null){
-            Toast.makeText(this,"Enable Location permission to Use this!",Toast.LENGTH_SHORT).show();
+
+
+    private  boolean checkCurrentLocation(){
+
+        if (!locationPermission){
+            Log.d("location", "00");
+            return false;
+        }else if (myLocationoverlay.getMyLocation()==null){
+            return false;
         }
         else {
+            double curLat=myLocationoverlay.getMyLocation().getLatitude();
+            double curLong=myLocationoverlay.getMyLocation().getLongitude();
+            if (user_lat==curLat&&user_long==curLong){
+                return false;
+            }else {
+                Log.d("location", "1");
+                user_lat = myLocationoverlay.getMyLocation().getLatitude();
+                user_long = myLocationoverlay.getMyLocation().getLongitude();
+                return true;
+            }
+        }
+    }
+    private void locationToast(){
+        if (!locationPermission) {
+            Toast.makeText(this, "Enable Location permission to Use this!", Toast.LENGTH_SHORT).show();
+        } else {
             mapController = map.getController();
-            mapController.setZoom(15.6f);
+//            mapController.setZoom(15.6f);
             if (myLocationoverlay.getMyLocation() != null) {
                 IGeoPoint loc = myLocationoverlay.getMyLocation();
-//            double lat = myLocationoverlay.getMyLocation().getLatitude();
-//            double lo = myLocationoverlay.getMyLocation().getLongitude();
                 mapController.animateTo(loc);
-//            Toast.makeText(this, "Latitude: " + lat + ", Longitude: " + lo, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Latitude: " + myLocationoverlay.getMyLocation().getLatitude() +
+                    ", Longitude: " + myLocationoverlay.getMyLocation().getLongitude(), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "Location Not Found!", Toast.LENGTH_SHORT).show();
             }
@@ -155,6 +211,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         if (map!=null) {
             map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
             threadControl.pause();
+            mp.pause();
             mHandler.removeCallbacks(timerTask);
         }
     }
@@ -181,8 +238,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         }else if (so.getSignalAspect().equals("Green")) {
             marker.setIcon(getResources().getDrawable(R.drawable.green));
             marker.setId("Green");
-        } else if (so.getSignalAspect().equals("Yellow")) {
-            marker.setIcon(getResources().getDrawable(R.drawable.yellow));
+        } else if (so.getSignalAspect().equals("Yellow")) {            marker.setIcon(getResources().getDrawable(R.drawable.yellow));
             marker.setId("Yellow");
         } else if (so.getSignalAspect().equals("YellowYellow")) {
             marker.setIcon(getResources().getDrawable(R.drawable.yellowyellow));
@@ -208,19 +264,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public void sync(View view) {
         locationToast();
-//        Button b= findViewById(R.id.button);
-//        if(b.getText().equals("Pause Sync")){
-//            threadControl.pause();
-//            mHandler.removeCallbacks(timerTask);
-//            b.setText("Resume Sync");
-//            Toast.makeText(this,"Sync Paused!",Toast.LENGTH_SHORT).show();
-//        }
-//        else if (b.getText().equals("Resume Sync")){
-//            mHandler.post(timerTask);
-//            threadControl.resume();
-//            b.setText("Pause Sync");
-//            Toast.makeText(this,"Sync Resumed!",Toast.LENGTH_SHORT).show();
-//        }
     }
 
     public void populateMarkers(HashMap<String, GeoPoint> h) {
@@ -248,17 +291,21 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
     public void addInitialSignals(ArrayList<Signal> signals) {
-        if (signals.size()==0){
-            Toast.makeText(this,"No Signal Found!",Toast.LENGTH_SHORT).show();
-        }
-        else {
+        if (signals.size()!=0){
             for (Signal s : signals) {
                 if (checkSignalWithMarker(s) != null) {
                     currentSignals.add(s);
                     currentMarkers.add(checkSignalWithMarker(s));
                 }
             }
+            playSound();
             addToMap(currentSignals);
+        }
+    }
+
+    private void playSound(){
+        if (soundCheck){
+            mp.start();
         }
     }
 
@@ -274,10 +321,9 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public void updateSignals(ArrayList<Signal> signals) {
         Log.d("update", signals.toString());
-        if (signals.size()==0){
-            Toast.makeText(this,"No Signal Found!",Toast.LENGTH_SHORT).show();
-        }else {
+        if (signals.size()!=0){
             if (signalsComparison(signals)) {
+                Log.d("update", Boolean.toString(soundCheck));
                 removeMarkers(currentMarkers);
                 currentSignals.clear();
                 currentMarkers.clear();
@@ -291,56 +337,73 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     private boolean signalsComparison(ArrayList<Signal> s){
         boolean f=false;
+        soundCheck=false;
         if (s.size()!=currentSignals.size()){
-            return true;
+            for (int i=0;i<s.size();i++) {
+                Signal so=s.get(i);
+                if(so.getIndex()==1) {
+                    soundCheck = true;
+                }
+            }
+                return true;
         }
         else {
-            for (int i=0;i<currentSignals.size();i++){
-                if (!s.get(i).getSignalID().equals(currentSignals.get(i).getSignalID())){
+            for (int i=0;i<s.size();i++){
+                Signal so=s.get(i);
+                if (sig(so)){
                     f=true;
-                    break;
+                    if(so.getIndex()==1) {
+                        soundCheck = true;
+                    }
                 }
             }
             return f;
         }
     }
 
-    private boolean permissionsCheck() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+    private boolean sig(Signal s){
+        boolean t=true;
+        for (Signal so: currentSignals){
+            if (so.getSignalID().equals(s.getSignalID())){
+                t=false;
+                break;
             }
-            return false;
         }
-        else {
-            return true;
+        return t;
+    }
+
+    private void askPermission(String permission,int requestCode){
+        if (ContextCompat.checkSelfPermission(this,permission)!=PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,new String[]{permission},requestCode);
+        }else {
+            locationPermission=true;
         }
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_LOCATION: {
+            case MY_PERMISSIONS_REQUEST_LOCATION:
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
+                    locationPermission=true;
+                    GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
+                    myLocationoverlay = new MyLocationNewOverlay(gp, map);
+                    myLocationoverlay.enableMyLocation();
+                    myLocationoverlay.setDrawAccuracyEnabled(false);
+                    map.getOverlays().add(myLocationoverlay);
+                    map.invalidate();
                     Toast.makeText(this,"Location Sharing Enabled!",Toast.LENGTH_SHORT).show();
                 } else {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                     Toast.makeText(this,"Location Sharing Disabled!",Toast.LENGTH_SHORT).show();
                 }
-                return;
-            }
+                break;
 
             // other 'case' lines to check for other
             // permissions this app might request.

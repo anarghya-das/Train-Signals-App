@@ -1,21 +1,24 @@
 package com.example.anarg.openmap2;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.Test;
-import org.osmdroid.util.GeoPoint;
 
-import java.io.ByteArrayOutputStream;
+
+import org.junit.Test;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.HttpURLConnection;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import static org.junit.Assert.*;
 
@@ -26,65 +29,75 @@ import static org.junit.Assert.*;
  */
 public class ExampleUnitTest {
     @Test
-    public void JsonTest(){
-        BackEnd b=new BackEnd();
-//        System.out.println(b.jsonPlot(HttpGet("http://anarghya321.pythonanywhere.com/api/railwaysignals.json")));
-        System.out.println(HttpPost("http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead"));
-//        ArrayList<Signal> s=new ArrayList<>();
-//        if (s.size()==0) {
-//            System.out.println(s.toString());
-//        }
-//        System.out.println(HttpPost("http://httpbin.org/post"));
+    public void JsonTest() throws IOException {
+        System.out.println(postagain("http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead","asd"));
     }
-    private String HttpGet(String s){
-        HttpClient httpclient = new DefaultHttpClient();
-        HttpResponse response;
-        String responseString = null;
+    private String postagain(String s,String p){
+        String response;
         try {
-            response = httpclient.execute(new HttpGet(s));
-            StatusLine statusLine = response.getStatusLine();
-            if(statusLine.getStatusCode() == HttpStatus.SC_OK){
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                response.getEntity().writeTo(out);
-                responseString = out.toString();
-                out.close();
-            } else{
-                //Closes the connection.
-                response.getEntity().getContent().close();
-                throw new IOException(statusLine.getReasonPhrase());
+            // This is getting the url from the string we passed in
+            URL url = new URL(s);
+
+            // Create the urlConnection
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+
+            urlConnection.setDoInput(true);
+            urlConnection.setDoOutput(true);
+
+            urlConnection.setRequestProperty("Content-Type", "application/json");
+
+            urlConnection.setRequestMethod("POST");
+
+
+            // Send the post body
+            if (p != null&&!p.isEmpty()) {
+                OutputStreamWriter writer = new OutputStreamWriter(urlConnection.getOutputStream());
+                writer.write(p);
+                writer.flush();
             }
-        } catch (ClientProtocolException e) {
-//            return "error";
-        } catch (IOException e) {
-//            return "error";
-        }
-        return responseString;
-    }
-    private String HttpPost(String s){
-        HttpClient httpClient= new DefaultHttpClient();
-        HttpPost httpPost;
-        HttpResponse response;
-        String resString=null;
-        try {
-            httpPost=new HttpPost(s);
-            response= httpClient.execute(httpPost);
-            StatusLine statusLine = response.getStatusLine();
-            if(statusLine.getStatusCode() == HttpStatus.SC_OK){
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                response.getEntity().writeTo(out);
-                resString = out.toString();
-                System.out.println(resString.length());
-                out.close();
-            } else{
-                //Closes the connection.
-                response.getEntity().getContent().close();
-                throw new IOException(statusLine.getReasonPhrase());
+
+            int statusCode = urlConnection.getResponseCode();
+
+            if (statusCode ==  200) {
+
+                InputStream inputStream = new BufferedInputStream(urlConnection.getInputStream());
+
+                response = convertInputStreamToString(inputStream);
+
             }
+                //Close our InputStream and Buffered reader
+                // From here you can convert the string to JSON with whatever JSON parser you like to use
+                // After converting the string to JSON, I call my custom callback. You can follow this process too, or you can implement the onPostExecute(Result) method
+             else {
+                // Status code is not 200
+                // Do something to handle the error
+                throw new Exception();
+            }
+
         } catch (Exception e) {
-            e.printStackTrace();
+            return null;
         }
-        return resString;
+        return response;
+    }
+    static String convertInputStreamToString(java.io.InputStream is) {
+        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+        return s.hasNext() ? s.next() : "";
     }
 
 
+    public static final MediaType JSON
+            = MediaType.parse("application/json; charset=utf-8");
+
+    OkHttpClient client = new OkHttpClient();
+
+    String post(String url, String json) throws IOException {
+        RequestBody body = RequestBody.create(JSON, json);
+        Request request = new okhttp3.Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        Response response = client.newCall(request).execute();
+        return response.body().string();
+    }
 }
