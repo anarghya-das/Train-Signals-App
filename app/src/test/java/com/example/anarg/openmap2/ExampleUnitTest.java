@@ -2,25 +2,17 @@ package com.example.anarg.openmap2;
 
 
 
+import com.eclipsesource.json.JsonObject;
+
 import org.junit.Test;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.HttpURLConnection;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-
-import static org.junit.Assert.*;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -30,7 +22,24 @@ import static org.junit.Assert.*;
 public class ExampleUnitTest {
     @Test
     public void JsonTest() throws IOException {
-        System.out.println(postagain("http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead","asd"));
+        System.out.println(postagain("http://irtrainsignalsystem.herokuapp.com/cgi-bin/sendd" +
+                "evicelocation",jsonPost()));
+    }
+    private String jsonPost(){
+        JsonObject o=new JsonObject();
+        o.add("deviceId","Asv");
+        JsonObject o2=new JsonObject();
+        o2.add("trainNo",12312);
+        o2.add("phone",123222);
+        o2.add("trainName","aSD");
+        o2.add("trackName","As");
+        o.add("info",o2);
+        JsonObject o3=new JsonObject();
+        o3.add("latitude",22.5827312);
+        o3.add("longitude", 88.4572688);
+        o.add("coordinate",o3);
+//        Log.d("worksend", o.toString());
+        return o.toString();
     }
     private String postagain(String s,String p){
         String response;
@@ -85,19 +94,4 @@ public class ExampleUnitTest {
         return s.hasNext() ? s.next() : "";
     }
 
-
-    public static final MediaType JSON
-            = MediaType.parse("application/json; charset=utf-8");
-
-    OkHttpClient client = new OkHttpClient();
-
-    String post(String url, String json) throws IOException {
-        RequestBody body = RequestBody.create(JSON, json);
-        Request request = new okhttp3.Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
-        Response response = client.newCall(request).execute();
-        return response.body().string();
-    }
 }

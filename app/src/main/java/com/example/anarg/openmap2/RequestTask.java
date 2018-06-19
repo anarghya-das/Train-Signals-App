@@ -50,9 +50,16 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     if (!uri[0].equals("") && !uri[1].equals("")) {
                         a.add(get(uri[0]));
                         a.add(post(uri[1],"asd"));
-                    } else {
+                    }
+                    if (uri[0].equals("")){
+                        String s2="";
+                        if (gp.checkCurrentLocation()){
+                            s2=post(uri[2],uri[3]);
+                        }
                         String s = post(uri[1],"asd");
                         a.add(s);
+                        a.add(s2);
+                        a.add("sd");
                     }
                     t = false;
                 }
@@ -74,13 +81,16 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                 gp.addInitialSignals(t.getSignals());
                 gp.setMapCenter();
             }
-            if (result.size() == 1) {
+            if (result.size() == 3) {
                 if (!result.get(0).equals("")) {
                     Train t = b.getTrainFromName(param, b.jsonGov(result.get(0)));
                     if (t!=null){
                         Log.d("list", "RUN");
                         gp.updateSignals(t.getSignals());
                     }
+                }
+                if (!result.get(1).equals("")){
+                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
                 }
             }
         }

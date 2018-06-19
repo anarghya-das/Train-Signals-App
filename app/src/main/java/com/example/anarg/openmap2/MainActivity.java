@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         android_id = Settings.Secure.getString(this.getContentResolver(),
                 Settings.Secure.ANDROID_ID);
         new RequestTask(backend, this, threadControl, trainName).execute(reqURl, govURl);
+//        setMapCenter();
         askPermission(Manifest.permission.ACCESS_FINE_LOCATION,MY_PERMISSIONS_REQUEST_LOCATION);
         if (locationPermission){
             GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
@@ -134,11 +135,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-                new RequestTask(backend, MainActivity.this, threadControl, trainName).execute("", govURl);
-                if (checkCurrentLocation()){
-                    Log.d("location", "congo");
-                    new ServerPost().execute(backEndServer,jsonPost());
-                }
+                new RequestTask(backend, MainActivity.this, threadControl, trainName).execute("", govURl,backEndServer,jsonPost());
                 mHandler.postDelayed(timerTask, 1);
             }};
 
@@ -151,7 +148,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
 
 
-    private  boolean checkCurrentLocation(){
+    public boolean checkCurrentLocation(){
 
         if (!locationPermission){
             Log.d("location", "00");
@@ -238,28 +235,14 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         }else if (so.getSignalAspect().equals("Green")) {
             marker.setIcon(getResources().getDrawable(R.drawable.green));
             marker.setId("Green");
-        } else if (so.getSignalAspect().equals("Yellow")) {            marker.setIcon(getResources().getDrawable(R.drawable.yellow));
+        } else if (so.getSignalAspect().equals("Yellow")) {
+            marker.setIcon(getResources().getDrawable(R.drawable.yellow));
             marker.setId("Yellow");
         } else if (so.getSignalAspect().equals("YellowYellow")) {
             marker.setIcon(getResources().getDrawable(R.drawable.yellowyellow));
             marker.setId("YellowYellow");
         }
 
-    }
-
-    //Helper Method for addSignals
-    private Signal check(String id, ArrayList<Signal> s){
-        if(s!=null) {
-            for (Signal so : s) {
-                if (so.getSignalID().equals(id)) {
-                    return so;
-                }
-            }
-            return null;
-        }
-        else {
-            return null;
-        }
     }
 
     public void sync(View view) {
