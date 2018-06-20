@@ -53,8 +53,10 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     }
                     if (uri[0].equals("")){
                         String s2="";
-                        if (gp.checkCurrentLocation()){
-                            s2=post(uri[2],uri[3]);
+                        boolean b=gp.checkCurrentLocation();
+                        Log.d("signals",Boolean.toString(b));
+                        if (b){
+                            s2=post(uri[2],gp.jsonPost());
                         }
                         String s = post(uri[1],"asd");
                         a.add(s);
@@ -90,7 +92,8 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     }
                 }
                 if (!result.get(1).equals("")){
-                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
+                    Log.d("result", result.get(1));
+//                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
                 }
             }
         }

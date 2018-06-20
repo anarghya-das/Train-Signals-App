@@ -27,7 +27,7 @@ public class ExampleUnitTest {
     }
     private String jsonPost(){
         JsonObject o=new JsonObject();
-        o.add("deviceId","Asv");
+        o.add("deviceId","eb9b73a64475222c");
         JsonObject o2=new JsonObject();
         o2.add("trainNo",12312);
         o2.add("phone",123222);
@@ -35,8 +35,8 @@ public class ExampleUnitTest {
         o2.add("trackName","As");
         o.add("info",o2);
         JsonObject o3=new JsonObject();
-        o3.add("latitude",22.5827312);
-        o3.add("longitude", 88.4572688);
+        o3.add("latitude",22.5817837);
+        o3.add("longitude", 88.4587077);
         o.add("coordinate",o3);
 //        Log.d("worksend", o.toString());
         return o.toString();

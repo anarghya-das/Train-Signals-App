@@ -54,7 +54,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private int trainNo;
     private long phone;
     private String android_id;
-    private double user_lat,user_long;
+    private IGeoPoint myLocation;
+    private double user_Lat,user_Long;
     private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
     private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
@@ -76,6 +77,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         allMarkers = new ArrayList<>();
         currentMarkers = new ArrayList<>();
         currentSignals = new ArrayList<>();
+        user_Long=0.0;
+        user_Lat=0.0;
         mp= MediaPlayer.create(this,R.raw.sound);
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
@@ -93,8 +96,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         backend = new BackEnd();
         threadControl = new ThreadControl();
         Intent i = getIntent();
-        user_long=0.0;
-        user_long=0.0;
         trainName = i.getStringExtra("Signal");
         trainNo = i.getIntExtra("TrainNumber",0);
         trackName = i.getStringExtra("TrackName");
@@ -110,11 +111,13 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             myLocationoverlay.enableMyLocation();
             myLocationoverlay.setDrawAccuracyEnabled(false);
             map.getOverlays().add(myLocationoverlay);
+            myLocation=myLocationoverlay.getMyLocation();
             map.invalidate();
+//            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
         }
     }
 
-    private String jsonPost(){
+    public String jsonPost(){
         JsonObject o=new JsonObject();
         o.add("deviceId",android_id);
         JsonObject o2=new JsonObject();
@@ -124,8 +127,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         o2.add("trackName",trackName);
         o.add("info",o2);
         JsonObject o3=new JsonObject();
-        o3.add("latitude",user_lat);
-        o3.add("longitude",user_long);
+        o3.add("latitude",user_Lat);
+        o3.add("longitude",user_Long);
         o.add("coordinate",o3);
 //        Log.d("worksend", o.toString());
         return o.toString();
@@ -135,7 +138,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-                new RequestTask(backend, MainActivity.this, threadControl, trainName).execute("", govURl,backEndServer,jsonPost());
+                new RequestTask(backend, MainActivity.this, threadControl, trainName).execute("", govURl,backEndServer);
                 mHandler.postDelayed(timerTask, 1);
             }};
 
@@ -148,38 +151,35 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
 
 
-    public boolean checkCurrentLocation(){
+    public boolean checkCurrentLocation() {
 
-        if (!locationPermission){
+        if (!locationPermission) {
             Log.d("location", "00");
             return false;
-        }else if (myLocationoverlay.getMyLocation()==null){
-            return false;
-        }
-        else {
-            double curLat=myLocationoverlay.getMyLocation().getLatitude();
-            double curLong=myLocationoverlay.getMyLocation().getLongitude();
-            if (user_lat==curLat&&user_long==curLong){
+        } else {
+            myLocation = myLocationoverlay.getMyLocation();
+            double user_Lat1 = myLocation.getLatitude();
+            double user_Long1 = myLocation.getLongitude();
+            if (user_Lat==user_Lat1||user_Long==user_Long1){
                 return false;
             }else {
-                Log.d("location", "1");
-                user_lat = myLocationoverlay.getMyLocation().getLatitude();
-                user_long = myLocationoverlay.getMyLocation().getLongitude();
+                user_Lat=user_Lat1;
+                user_Long=user_Long1;
                 return true;
             }
         }
     }
+
     private void locationToast(){
         if (!locationPermission) {
             Toast.makeText(this, "Enable Location permission to Use this!", Toast.LENGTH_SHORT).show();
         } else {
             mapController = map.getController();
 //            mapController.setZoom(15.6f);
-            if (myLocationoverlay.getMyLocation() != null) {
-                IGeoPoint loc = myLocationoverlay.getMyLocation();
-                mapController.animateTo(loc);
-            Toast.makeText(this, "Latitude: " + myLocationoverlay.getMyLocation().getLatitude() +
-                    ", Longitude: " + myLocationoverlay.getMyLocation().getLongitude(), Toast.LENGTH_SHORT).show();
+            if (myLocation != null) {
+                mapController.animateTo(myLocation);
+            Toast.makeText(this, "Latitude: " + myLocation.getLatitude() +
+                    ", Longitude: " + myLocation.getLongitude(), Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "Location Not Found!", Toast.LENGTH_SHORT).show();
             }
@@ -208,7 +208,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         if (map!=null) {
             map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
             threadControl.pause();
-            mp.pause();
+//            mp.pause();
             mHandler.removeCallbacks(timerTask);
         }
     }
