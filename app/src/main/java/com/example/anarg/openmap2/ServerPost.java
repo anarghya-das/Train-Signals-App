@@ -3,6 +3,7 @@ package com.example.anarg.openmap2;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -13,11 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class ServerPost extends AsyncTask<String,Void,String> {
-    @SuppressLint("StaticFieldLeak")
-    private MainActivity m;
-    ServerPost(MainActivity m){
-        this.m=m;
-    }
+
     @Override
     protected String doInBackground(String... strings) {
         try {
@@ -29,7 +26,12 @@ public class ServerPost extends AsyncTask<String,Void,String> {
 
     @Override
     protected void onPostExecute(String s) {
-        Toast.makeText(m, s,Toast.LENGTH_SHORT).show();
+        if (s!=null) {
+            Log.d("key", s);
+        }
+        else {
+            Log.d("key", "null");
+        }
     }
 
     private String post(String u, String json) throws IOException {

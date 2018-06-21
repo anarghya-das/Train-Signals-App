@@ -3,7 +3,6 @@ package com.example.anarg.openmap2;
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 import org.osmdroid.util.GeoPoint;
 
 import java.io.BufferedInputStream;
@@ -56,7 +55,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                         boolean b=gp.checkCurrentLocation();
                         Log.d("signals",Boolean.toString(b));
                         if (b){
-                            s2=post(uri[2],gp.jsonPost());
+                            s2=post(uri[2],gp.jsonPost("active"));
                         }
                         String s = post(uri[1],"asd");
                         a.add(s);
@@ -73,6 +72,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
 
     @Override
     protected void onPostExecute(ArrayList<String> result) {
+        Log.d("key", "Request Task onPostExecute: ");
         if (result==null){
             gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
         }else {

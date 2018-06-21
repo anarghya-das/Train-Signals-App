@@ -22,15 +22,16 @@ import java.net.URL;
 public class ExampleUnitTest {
     @Test
     public void JsonTest() throws IOException {
+        System.out.println(jsonPost());
         System.out.println(postagain("http://irtrainsignalsystem.herokuapp.com/cgi-bin/sendd" +
-                "evicelocation",jsonPost()));
+                "evicelocation",jsonPost()).trim().equals("good"));
     }
     private String jsonPost(){
         JsonObject o=new JsonObject();
-        o.add("deviceId","eb9b73a64475222c");
+        o.add("deviceId","5c");
         JsonObject o2=new JsonObject();
         o2.add("trainNo",12312);
-        o2.add("phone",123222);
+        o2.add("phone",8961501754L);
         o2.add("trainName","aSD");
         o2.add("trackName","As");
         o.add("info",o2);
@@ -38,6 +39,7 @@ public class ExampleUnitTest {
         o3.add("latitude",22.5817837);
         o3.add("longitude", 88.4587077);
         o.add("coordinate",o3);
+        o.add("status","active");
 //        Log.d("worksend", o.toString());
         return o.toString();
     }

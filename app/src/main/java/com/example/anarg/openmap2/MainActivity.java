@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private long phone;
     private String android_id;
     private IGeoPoint myLocation;
+    private RequestTask requestTask;
     private double user_Lat,user_Long;
     private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
@@ -117,7 +118,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         }
     }
 
-    public String jsonPost(){
+    public String jsonPost(String status){
         JsonObject o=new JsonObject();
         o.add("deviceId",android_id);
         JsonObject o2=new JsonObject();
@@ -130,6 +131,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         o3.add("latitude",user_Lat);
         o3.add("longitude",user_Long);
         o.add("coordinate",o3);
+        o.add("status", status);
 //        Log.d("worksend", o.toString());
         return o.toString();
     }
@@ -138,7 +140,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-                new RequestTask(backend, MainActivity.this, threadControl, trainName).execute("", govURl,backEndServer);
+               requestTask= new RequestTask(backend, MainActivity.this, threadControl, trainName);
+               requestTask.execute("", govURl,backEndServer);
                 mHandler.postDelayed(timerTask, 1);
             }};
 
@@ -188,6 +191,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public void onResume() {
         super.onResume();
+        Log.d("key", "onResume");
+        new ServerPost().execute(backEndServer,jsonPost("active"));
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -201,6 +206,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public void onPause() {
         super.onPause();
+        Log.d("key", "onPause");
+        new ServerPost().execute(backEndServer,jsonPost("notactive"));
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -211,6 +218,15 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 //            mp.pause();
             mHandler.removeCallbacks(timerTask);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        threadControl.cancel();
+        requestTask.cancel(true);
+        Log.d("key", "onDestroy:");
+        new ServerPost().execute(backEndServer,jsonPost("notactive"));
     }
 
     private Marker configMarker(GeoPoint gp, String description, Signal s) {
@@ -405,14 +421,15 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         AlertDialog dialog = builder.create();
         dialog.show();
     }
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event)
-    {
-        if ((keyCode == KeyEvent.KEYCODE_BACK))
-        {
-            threadControl.cancel();
-            finish();
-        }
-        return super.onKeyDown(keyCode, event);
-    }
+
+//    @Override
+//    public boolean onKeyDown(int keyCode, KeyEvent event)
+//    {
+//        if ((keyCode == KeyEvent.KEYCODE_BACK))
+//        {
+//            threadControl.cancel();
+//            finish();
+//        }
+//        return super.onKeyDown(keyCode, event);
+//    }
 }
