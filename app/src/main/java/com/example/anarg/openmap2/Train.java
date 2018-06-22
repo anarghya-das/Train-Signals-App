@@ -7,12 +7,13 @@ public class Train {
     private String stationCode, CurrentLoc, trainName, direction,trackName;
     private ArrayList<Signal> signals;
 
-    public Train(int id,String tn,String trackName) {
+    Train(int id, String tn, String trackName) {
         signals=new ArrayList<>();
         trainId = id;
         this.trackName=trackName;
         trainName=tn;
     }
+
 
     public void setStationCode(String stc) {
         stationCode = stc;

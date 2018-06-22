@@ -1,5 +1,7 @@
 package com.example.anarg.openmap2;
 
+import android.annotation.SuppressLint;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -71,8 +73,7 @@ public class BackEnd {
         return allInformation;
     }
 
-    public boolean checkTrainName(String t,String s){
-        ArrayList<Train> to=jsonGov(s);
+    public boolean checkTrainName(String t,ArrayList<Train> to){
         for (Train c: to){
             if (c.getTrainName().equals(t)){
                 return true;
@@ -81,8 +82,16 @@ public class BackEnd {
         return false;
     }
 
-    public boolean checkTrainNumber(String t,String s){
-        ArrayList<Train> to=jsonGov(s);
+    public Train getTrain(String t, ArrayList<Train> to){
+        for (Train c: to){
+            if (c.getTrainName().equals(t)){
+                return c;
+            }
+        }
+        return null;
+    }
+
+    public boolean checkTrainNumber(String t,ArrayList<Train> to){
         for (Train c: to){
             if (c.getTrainId()==Integer.parseInt(t)){
                 return true;
@@ -90,8 +99,7 @@ public class BackEnd {
         }
         return false;
     }
-    public boolean checkTrackName(String param3,String s) {
-        ArrayList<Train> to=jsonGov(s);
+    public boolean checkTrackName(String param3,ArrayList<Train> to) {
         for (Train c: to){
             if (c.getTrackName().equals(param3)){
                 return true;
@@ -100,21 +108,12 @@ public class BackEnd {
         return false;
     }
 
-    public HashMap<Integer,String> trainMap(ArrayList<Train> trains){
-        HashMap<Integer,String> t=new HashMap<>();
-        for (Train to: trains){
-            t.put(to.getTrainId(),to.getTrainName());
-        }
-        return t;
-    }
 
 
     public ArrayList<Signal> getSignals(ArrayList<Train> t){
         ArrayList<Signal> sg=new ArrayList<>();
         for (Train a: t){
-            for(Signal s: a.getSignals()){
-                sg.add(s);
-            }
+            sg.addAll(a.getSignals());
         }
         return  sg;
     }

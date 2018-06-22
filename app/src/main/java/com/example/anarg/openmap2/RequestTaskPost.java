@@ -39,6 +39,7 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
         }
         else {
             ArrayList<Train> allTrains = backEnd.jsonGov(s);
+            m.setTrains(allTrains);
             m.createTrainNameView(trainArray(allTrains), allTrains);
             m.createTrainIDView(trainID(allTrains), allTrains);
             m.createTrackNameView(trackName(allTrains),allTrains);

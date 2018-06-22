@@ -192,7 +192,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     public void onResume() {
         super.onResume();
         Log.d("key", "onResume");
-        new ServerPost().execute(backEndServer,jsonPost("active"));
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -207,7 +206,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     public void onPause() {
         super.onPause();
         Log.d("key", "onPause");
-        new ServerPost().execute(backEndServer,jsonPost("notactive"));
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -226,7 +224,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         threadControl.cancel();
         requestTask.cancel(true);
         Log.d("key", "onDestroy:");
-        new ServerPost().execute(backEndServer,jsonPost("notactive"));
     }
 
     private Marker configMarker(GeoPoint gp, String description, Signal s) {

@@ -10,14 +10,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <Button
+    <ImageView
         android:id="@+id/button"
+        android:src="@drawable/gps"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
         android:layout_marginEnd="18dp"
-        android:text="Find Me"
+        android:layout_marginTop="18dp"
         android:onClick="sync"
         android:layout_alignParentRight="true"
         android:layout_marginRight="18dp" />

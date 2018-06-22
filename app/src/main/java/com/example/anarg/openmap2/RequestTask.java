@@ -64,10 +64,10 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     }
                     t = false;
                 }
+                return a;
             } catch (Exception e) {
                 return null;
             }
-            return a;
     }
 
     @Override

@@ -1,9 +1,10 @@
 package com.example.anarg.openmap2;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -12,8 +13,30 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 
 public class ServerPost extends AsyncTask<String,Void,String> {
+    @SuppressLint("StaticFieldLeak")
+    private MainScreenActivity mainScreenActivity;
+    private String param,param2,param3;
+    private long num;
+    @SuppressLint("StaticFieldLeak")
+    private EditText et;
+    private BackEnd backEnd;
+    private ArrayList<Train> trains;
+
+    ServerPost(MainScreenActivity mainScreenActivity, String param3, String param, String param2,
+               EditText et,ArrayList<Train> t,long num) {
+        this.mainScreenActivity=mainScreenActivity;
+        this.param=param;
+        this.param2=param2;
+        this.param3=param3;
+        this.et=et;
+        this.num=num;
+        backEnd=new BackEnd();
+        trains=t;
+    }
+
 
     @Override
     protected String doInBackground(String... strings) {
@@ -26,11 +49,28 @@ public class ServerPost extends AsyncTask<String,Void,String> {
 
     @Override
     protected void onPostExecute(String s) {
-        if (s!=null) {
-            Log.d("key", s);
+        Log.d("result", s);
+        try {
+            if (s.trim().equals("good")) {
+
+                Intent i = new Intent(mainScreenActivity, SignalActivity.class);
+                i.putExtra("Signal", param);
+                i.putExtra("TrainNumber",Integer.parseInt(param2));
+                i.putExtra("TrackName",param3);
+                i.putExtra("Phone",num);
+                mainScreenActivity.startActivity(i);
+//                Toast.makeText(mainScreenActivity,"YAAAAY",Toast.LENGTH_SHORT).show();
+            } else {
+                if (s.equals("error")){
+                    mainScreenActivity.exceptionRaised();
+                }
+                else {
+                    Toast.makeText(mainScreenActivity, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
-        else {
-            Log.d("key", "null");
+        catch (NullPointerException e){
+            Toast.makeText(mainScreenActivity, "Something was wrong!", Toast.LENGTH_SHORT).show();
         }
     }
 

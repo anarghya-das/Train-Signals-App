@@ -132,7 +132,7 @@
             android:layout_gravity="center|end"
             android:layout_marginRight="100dp"
             android:layout_marginTop="-30sp"
-            android:onClick="dropDown2"
+            android:onClick="dropdown3"
             android:src="@drawable/down" />
 
         <ImageView

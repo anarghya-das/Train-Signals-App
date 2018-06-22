@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 
 
 /**
@@ -20,11 +21,15 @@ import java.net.URL;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 public class ExampleUnitTest {
+    private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+
     @Test
     public void JsonTest() throws IOException {
-        System.out.println(jsonPost());
-        System.out.println(postagain("http://irtrainsignalsystem.herokuapp.com/cgi-bin/sendd" +
-                "evicelocation",jsonPost()).trim().equals("good"));
+        BackEnd b=new BackEnd();
+        String s=postagain(govURl,"asd");
+        ArrayList<Train> t=b.jsonGov(s);
+        Train to=b.getTrainFromName("Howrah - Pundooah Local",t);
+        System.out.println(s);
     }
     private String jsonPost(){
         JsonObject o=new JsonObject();
@@ -39,7 +44,7 @@ public class ExampleUnitTest {
         o3.add("latitude",22.5817837);
         o3.add("longitude", 88.4587077);
         o.add("coordinate",o3);
-        o.add("status","active");
+        o.add("status","notactive");
 //        Log.d("worksend", o.toString());
         return o.toString();
     }

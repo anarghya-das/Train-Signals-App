@@ -3,6 +3,7 @@ package com.example.anarg.openmap2;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
@@ -24,6 +25,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -34,15 +36,17 @@ import java.util.concurrent.ExecutionException;
 
 public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 //    private static final String govURl = "http://anarghya321.pythonanywhere.com/static/railwaysignalapi_2018-06-09T10.27.37.000Z.json";
     private AutoCompleteTextView autocompleteView,autocompleteView2,autoCompleteTextView3;
+    private EditText editText;
     private TextView direction;
     private BackEnd backEnd;
-    private String json,android_id;
+    private String android_id;
+    private ArrayList<Train> trains;
+    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
 
-    @SuppressLint("HardwareIds")
+    @SuppressLint({"HardwareIds", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,22 +54,23 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
 //        setTraceLifecycle(true);
 //        String[] dogArr = getResources().getStringArray(R.array.dogs_list);
         backEnd=new BackEnd();
+        trains=new ArrayList<>();
         android_id = Settings.Secure.getString(this.getContentResolver(),
                 Settings.Secure.ANDROID_ID);
         autocompleteView = findViewById(R.id.autocompleteView);
         autocompleteView2 = findViewById(R.id.autocompleteView2);
         autoCompleteTextView3= findViewById(R.id.autocompleteView3);
+        editText=findViewById(R.id.editText);
         direction= findViewById(R.id.directionView);
         RequestTaskPost requestTaskPost=new RequestTaskPost(this);
         requestTaskPost.execute(govURl);
-        try {
-            json=requestTaskPost.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
+        Log.d("pref", "onCreate:");
+        SharedPreferences pref = getSharedPreferences("myPref", MODE_PRIVATE);
+        long n=pref.getLong("number",0);
+        editText.setText(Long.toString(n));
     }
+
+    public void setTrains(ArrayList<Train> t){ trains=t; }
 
     public AutoCompleteTextView getAutoCompleteTextView3() { return autoCompleteTextView3; }
 
@@ -101,9 +106,9 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
 
     public void dropDown1(View view) { autocompleteView.showDropDown(); }
 
-    public void dropDown2(View view) {
-        autocompleteView2.showDropDown();
-    }
+    public void dropDown2(View view) { autocompleteView2.showDropDown(); }
+
+    public void dropdown3(View view){ autoCompleteTextView3.showDropDown(); }
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     public void clear(View view) {
@@ -120,42 +125,29 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
     }
 
     public void Start(View view) {
-        ServerPost sp=new ServerPost();
         String param=autocompleteView.getText().toString();
         String param2=autocompleteView2.getText().toString();
         String param3=autoCompleteTextView3.getText().toString();
-        EditText et= findViewById(R.id.editText);
         try {
-            long num = Long.parseLong(et.getText().toString());
-            sp.execute(backEndServer,jsonPost("active",Integer.parseInt(param2),num,param,param3));
-            String key=sp.get().trim();
-            Log.d("key", key);
+            long num = Long.parseLong(editText.getText().toString());
+            SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
+            SharedPreferences.Editor prefeditor= preferences.edit();
+            prefeditor.putLong("number",num);
+            prefeditor.apply();
             if (param.isEmpty() || param2.isEmpty() || param3.isEmpty()) {
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             } else if (String.valueOf(num).length() != 10) {
                 Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
-            } else if (backEnd.checkTrainName(param, json) && backEnd.checkTrainNumber(param2, json) && backEnd.checkTrackName(param3, json)&&key.equals("good")) {
-                Intent i = new Intent(this, MainActivity.class);
-                i.putExtra("Signal", param);
-                i.putExtra("TrainNumber",Integer.parseInt(param2));
-                i.putExtra("TrackName",param3);
-                i.putExtra("Phone",num);
-                startActivity(i);
-            } else {
-                if (key.equals("error")){
-                    exceptionRaised();
-                }
-                else {
-                    Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
-                }
+            } else if (backEnd.checkTrainName(param, trains) && backEnd.checkTrainNumber(param2, trains)
+                    && backEnd.checkTrackName(param3, trains)) {
+                new ServerPost(this, param3, param, param2, editText, trains, num).execute(backEndServer,
+                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
+//                Toast.makeText(this,"Validating Input...",Toast.LENGTH_SHORT).show();
+            } else{
+                Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             }
-        }
-        catch (NumberFormatException e){
+        }catch (NumberFormatException e){
             Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
-        } catch (InterruptedException e) {
-            Toast.makeText(this, "Something was wrong!", Toast.LENGTH_SHORT).show();
-        } catch (ExecutionException e) {
-            Toast.makeText(this, "Something was wrong!", Toast.LENGTH_SHORT).show();
         }
     }
     public String jsonPost(String status,int trainNo, long phone, String trainName, String trackName){
