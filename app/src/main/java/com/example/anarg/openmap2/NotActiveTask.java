@@ -1,8 +1,6 @@
 package com.example.anarg.openmap2;
 
-import android.annotation.SuppressLint;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -11,52 +9,16 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class GovPost extends AsyncTask<String,Void,String> {
-    private String train;
-    private BackEnd backEnd;
-    @SuppressLint("StaticFieldLeak")
-    private SignalActivity signalActivity;
-    private ThreadControl threadControl;
-
-
-    GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl){
-        backEnd=new BackEnd();
-        train=s;
-        this.signalActivity=signalActivity;
-        this.threadControl=threadControl;
-    }
+public class NotActiveTask extends AsyncTask<String,Void,Void> {
 
     @Override
-    protected String doInBackground(String... strings) {
+    protected Void doInBackground(String... strings) {
         try {
-            String s=null;
-            boolean t=true;
-        while (t) {
-            threadControl.waitIfPaused();
-            //Stop work if control is cancelled.
-            if (threadControl.isCancelled()) {
-                break;
-            }
-            post(strings[1],strings[2]);
-            s=post(strings[0], "sdsd");
-            t=false;
-        }
-            return s;
-        } catch (Exception e) {
+            post(strings[0],strings[1]);
+        } catch (IOException e) {
             return null;
         }
-    }
-
-    @Override
-    protected void onPostExecute(String s) {
-        if (s!=null){
-            Train t=backEnd.getTrainFromName(train,backEnd.jsonGov(s));
-            Log.d("result", t.getSignals().toString());
-            if (signalActivity.currentCheck(t.getSignals())) {
-                Log.d("result", "CHANGE");
-                signalActivity.createSignal();
-            }
-        }
+        return null;
     }
 
     private String post(String u, String json) throws IOException {

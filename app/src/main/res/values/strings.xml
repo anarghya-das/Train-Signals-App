@@ -11,16 +11,6 @@
     <string name="buttontext">Enter</string>
     <string name="buttontext2">Clear</string>
     <string name="phone">Enter Phone Number</string>
-    <string-array name="dogs_list">
-        <item>Bichon Frise</item>
-        <item>Border Collie</item>
-        <item>Border Terrier</item>
-        <item>Boxer</item>
-        <item>Chihuahua</item>
-        <item>German Shepherd</item>
-        <item>Golden Retriever</item>
-        <item>Greyhound</item>
-    </string-array>
     <string name="title_activity_login">Sign in</string>
 
     <!-- Strings related to login -->
@@ -35,4 +25,6 @@
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
     </string>
+    <string name="title_signal">Signals</string>
+    <string name="title_map">Map</string>
 </resources>

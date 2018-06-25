@@ -7,11 +7,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -19,6 +21,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -63,9 +67,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private boolean soundCheck;
     private static MediaPlayer mp;
     private boolean locationPermission;
+    private ArrayList<RequestTask> g;
 
-
-    @SuppressLint("HardwareIds")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,6 +81,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         allMarkers = new ArrayList<>();
         currentMarkers = new ArrayList<>();
         currentSignals = new ArrayList<>();
+        g=new ArrayList<>();
         user_Long=0.0;
         user_Lat=0.0;
         mp= MediaPlayer.create(this,R.raw.sound);
@@ -90,10 +94,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
         //inflate and create the map
         setContentView(R.layout.activity_main);
-        map = findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
-        map.setBuiltInZoomControls(true);
-        map.setMultiTouchControls(true);
         backend = new BackEnd();
         threadControl = new ThreadControl();
         Intent i = getIntent();
@@ -101,9 +101,9 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         trainNo = i.getIntExtra("TrainNumber",0);
         trackName = i.getStringExtra("TrackName");
         phone = i.getLongExtra("Phone", 0);
-        android_id = Settings.Secure.getString(this.getContentResolver(),
-                Settings.Secure.ANDROID_ID);
-        new RequestTask(backend, this, threadControl, trainName).execute(reqURl, govURl);
+        android_id = i.getStringExtra("id");
+        requestTask = new RequestTask(backend, this, threadControl, trainName);
+        requestTask.execute(reqURl, govURl);
 //        setMapCenter();
         askPermission(Manifest.permission.ACCESS_FINE_LOCATION,MY_PERMISSIONS_REQUEST_LOCATION);
         if (locationPermission){
@@ -117,6 +117,39 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 //            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
         }
     }
+
+    public MapView getMap() { return map; }
+
+    public void creatBottonBar(){
+        BottomNavigationView navigation = findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        Menu menu= navigation.getMenu();
+        MenuItem menuItem= menu.getItem(1);
+        menuItem.setChecked(true);
+    }
+
+    public void createMap(){
+        map = findViewById(R.id.map);
+        map.setTileSource(TileSourceFactory.MAPNIK);
+        map.setBuiltInZoomControls(false);
+        map.setMultiTouchControls(true);
+    }
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.map_view:
+                    break;
+                case R.id.signal_view:
+                    finish();
+                    break;
+            }
+            return false;
+        }
+    };
 
     public String jsonPost(String status){
         JsonObject o=new JsonObject();
@@ -140,8 +173,11 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-               requestTask= new RequestTask(backend, MainActivity.this, threadControl, trainName);
-               requestTask.execute("", govURl,backEndServer);
+                if (requestTask.getStatus()== AsyncTask.Status.FINISHED) {
+                    requestTask = new RequestTask(backend, MainActivity.this, threadControl, trainName);
+                    requestTask.execute("", govURl, backEndServer);
+                    g.add(requestTask);
+                }
                 mHandler.postDelayed(timerTask, 1);
             }};
 
@@ -157,7 +193,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     public boolean checkCurrentLocation() {
 
         if (!locationPermission) {
-            Log.d("location", "00");
             return false;
         } else {
             myLocation = myLocationoverlay.getMyLocation();
@@ -191,39 +226,43 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public void onResume() {
         super.onResume();
-        Log.d("key", "onResume");
+        mHandler.post(timerTask);
+        threadControl.resume();
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         //Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
         if (map!=null) {
             map.onResume(); //needed for compass, my location overlays, v6.0.0 and up
-            mHandler.post(timerTask);
-            threadControl.resume();
         }
     }
 
     public void onPause() {
         super.onPause();
-        Log.d("key", "onPause");
+        threadControl.pause();
+        mHandler.removeCallbacks(timerTask);
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         //Configuration.getInstance().save(this, prefs);
         if (map!=null) {
             map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
-            threadControl.pause();
-//            mp.pause();
-            mHandler.removeCallbacks(timerTask);
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        threadControl.cancel();
-        requestTask.cancel(true);
-        Log.d("key", "onDestroy:");
+        for (RequestTask go: g) {
+            go.cancel(true);
+            threadControl.cancel();
+        }
     }
 
     private Marker configMarker(GeoPoint gp, String description, Signal s) {
@@ -316,7 +355,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
 
     public void updateSignals(ArrayList<Signal> signals) {
-        Log.d("update", signals.toString());
         if (signals.size()!=0){
             if (signalsComparison(signals)) {
                 Log.d("update", Boolean.toString(soundCheck));
@@ -419,14 +457,14 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         dialog.show();
     }
 
-//    @Override
-//    public boolean onKeyDown(int keyCode, KeyEvent event)
-//    {
-//        if ((keyCode == KeyEvent.KEYCODE_BACK))
-//        {
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event)
+    {
+        if ((keyCode == KeyEvent.KEYCODE_BACK))
+        {
 //            threadControl.cancel();
-//            finish();
-//        }
-//        return super.onKeyDown(keyCode, event);
-//    }
+            finish();
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 }

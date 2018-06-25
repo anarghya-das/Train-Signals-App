@@ -36,15 +36,13 @@ import java.util.concurrent.ExecutionException;
 
 public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-//    private static final String govURl = "http://anarghya321.pythonanywhere.com/static/railwaysignalapi_2018-06-09T10.27.37.000Z.json";
+    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     private AutoCompleteTextView autocompleteView,autocompleteView2,autoCompleteTextView3;
     private EditText editText;
     private TextView direction;
     private BackEnd backEnd;
     private String android_id;
     private ArrayList<Train> trains;
-    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
-
 
     @SuppressLint({"HardwareIds", "SetTextI18n"})
     @Override
@@ -67,7 +65,9 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
         Log.d("pref", "onCreate:");
         SharedPreferences pref = getSharedPreferences("myPref", MODE_PRIVATE);
         long n=pref.getLong("number",0);
-        editText.setText(Long.toString(n));
+        if(n!=0) {
+            editText.setText(Long.toString(n));
+        }
     }
 
     public void setTrains(ArrayList<Train> t){ trains=t; }
@@ -140,7 +140,7 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
                 Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
             } else if (backEnd.checkTrainName(param, trains) && backEnd.checkTrainNumber(param2, trains)
                     && backEnd.checkTrackName(param3, trains)) {
-                new ServerPost(this, param3, param, param2, editText, trains, num).execute(backEndServer,
+                new ServerPost(this, param3, param, param2, editText, trains, num,android_id).execute(backEndServer,
                         jsonPost("active", Integer.parseInt(param2), num, param, param3));
 //                Toast.makeText(this,"Validating Input...",Toast.LENGTH_SHORT).show();
             } else{

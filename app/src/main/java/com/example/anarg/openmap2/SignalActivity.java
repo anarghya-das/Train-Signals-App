@@ -4,15 +4,23 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.eclipsesource.json.JsonObject;
 
 import java.util.ArrayList;
 
 public class SignalActivity extends AppCompatActivity {
-    private String trainName,trackName;
+    private String trainName,trackName,android_id;
     private ArrayList<Train> train;
     private int trainNo;
     private long phone;
@@ -24,6 +32,7 @@ public class SignalActivity extends AppCompatActivity {
     private GovPost govPost;
     private ArrayList<GovPost> g;
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,11 +47,40 @@ public class SignalActivity extends AppCompatActivity {
         trainNo = i.getIntExtra("TrainNumber",0);
         trackName = i.getStringExtra("TrackName");
         phone = i.getLongExtra("Phone", 0);
+        android_id=i.getStringExtra("id");
         mediaPlayer=MediaPlayer.create(this,R.raw.sound);
+        BottomNavigationView navigation = findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        Menu menu= navigation.getMenu();
+        MenuItem menuItem= menu.getItem(0);
+        menuItem.setChecked(true);
         threadControl=new ThreadControl();
         govPost= new GovPost(trainName,this,threadControl);
         govPost.execute(govURl);
     }
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            switch (item.getItemId()) {
+                case  R.id.signal_view:
+                    break;
+                case R.id.map_view:
+//                    Toast.makeText(SignalActivity.this,"You clicked Map View",Toast.LENGTH_SHORT).show();
+                    Intent i=new Intent(SignalActivity.this,MainActivity.class);
+                    i.putExtra("Signal", trainName);
+                    i.putExtra("TrainNumber",trainNo);
+                    i.putExtra("TrackName",trackName);
+                    i.putExtra("Phone",phone);
+                    i.putExtra("id",android_id);
+                    SignalActivity.this.startActivity(i);
+                    break;
+            }
+            return false;
+        }
+    };
 
     @Override
     protected void onPause() {
@@ -59,13 +97,35 @@ public class SignalActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d("thread", "onDestroy: ");
         for (GovPost go: g) {
             go.cancel(true);
             threadControl.cancel();
         }
+    }
+
+    public String jsonPost(String status) {
+        JsonObject o = new JsonObject();
+        o.add("deviceId", android_id);
+        JsonObject o2 = new JsonObject();
+        o2.add("trainNo", trainNo);
+        o2.add("phone", phone);
+        o2.add("trainName", trainName);
+        o2.add("trackName", trackName);
+        o.add("info", o2);
+        JsonObject o3 = new JsonObject();
+        o3.add("latitude", 0);
+        o3.add("longitude", 0);
+        o.add("coordinate", o3);
+        o.add("status", status);
+        return o.toString();
     }
 
     private Handler mHandler = new Handler();
@@ -74,7 +134,7 @@ public class SignalActivity extends AppCompatActivity {
         public void run() {
             if (govPost.getStatus()== AsyncTask.Status.FINISHED) {
                 govPost= new GovPost(trainName,SignalActivity.this,threadControl);
-                govPost.execute(govURl);
+                govPost.execute(govURl,backEndServer,jsonPost("active"));
                 g.add(govPost);
             }
             mHandler.postDelayed(timerTask, 1);

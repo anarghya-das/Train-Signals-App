@@ -28,7 +28,7 @@ public class ExampleUnitTest {
         BackEnd b=new BackEnd();
         String s=postagain(govURl,"asd");
         ArrayList<Train> t=b.jsonGov(s);
-        Train to=b.getTrainFromName("Howrah - Pundooah Local",t);
+        Train to=b.getTrainFromName("Bandel-Howrah Local",t);
         System.out.println(s);
     }
     private String jsonPost(){

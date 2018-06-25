@@ -18,7 +18,7 @@ import java.util.ArrayList;
 public class ServerPost extends AsyncTask<String,Void,String> {
     @SuppressLint("StaticFieldLeak")
     private MainScreenActivity mainScreenActivity;
-    private String param,param2,param3;
+    private String param,param2,param3,android_id;
     private long num;
     @SuppressLint("StaticFieldLeak")
     private EditText et;
@@ -26,7 +26,7 @@ public class ServerPost extends AsyncTask<String,Void,String> {
     private ArrayList<Train> trains;
 
     ServerPost(MainScreenActivity mainScreenActivity, String param3, String param, String param2,
-               EditText et,ArrayList<Train> t,long num) {
+               EditText et,ArrayList<Train> t,long num,String android_id) {
         this.mainScreenActivity=mainScreenActivity;
         this.param=param;
         this.param2=param2;
@@ -35,6 +35,7 @@ public class ServerPost extends AsyncTask<String,Void,String> {
         this.num=num;
         backEnd=new BackEnd();
         trains=t;
+        this.android_id=android_id;
     }
 
 
@@ -58,6 +59,7 @@ public class ServerPost extends AsyncTask<String,Void,String> {
                 i.putExtra("TrainNumber",Integer.parseInt(param2));
                 i.putExtra("TrackName",param3);
                 i.putExtra("Phone",num);
+                i.putExtra("id",android_id);
                 mainScreenActivity.startActivity(i);
 //                Toast.makeText(mainScreenActivity,"YAAAAY",Toast.LENGTH_SHORT).show();
             } else {

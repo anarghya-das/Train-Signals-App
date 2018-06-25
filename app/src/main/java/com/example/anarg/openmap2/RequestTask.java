@@ -36,6 +36,14 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
     }
 
     @Override
+    protected void onPreExecute() {
+        if (gp.getMap()==null) {
+            gp.creatBottonBar();
+            gp.createMap();
+        }
+    }
+
+    @Override
     protected ArrayList<String> doInBackground(String... uri) {
         ArrayList<String> a = new ArrayList<>();
         boolean t = true;
@@ -98,6 +106,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             }
         }
     }
+
     private String post(String u, String json) throws IOException {
         String response;
             // This is getting the url from the string we passed in
