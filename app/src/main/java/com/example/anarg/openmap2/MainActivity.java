@@ -414,47 +414,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
 
-//    public void updateSignals(ArrayList<Signal> signals) {
-//        if (signals.size()!=0){
-//            if (signalsComparison(signals)) {
-//                Log.d("update", Boolean.toString(soundCheck));
-//                removeMarkers(currentMarkers);
-//                currentSignals.clear();
-//                currentMarkers.clear();
-//                addInitialSignals(signals);
-//                if (currentMarkers.size() != 0) {
-//                    Toast.makeText(this, "Updated Markers!", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        }
-//    }
-
-//    private boolean signalsComparison(ArrayList<Signal> s){
-//        boolean f=false;
-//        soundCheck=false;
-//        if (s.size()!=currentSignals.size()){
-//            for (int i=0;i<s.size();i++) {
-//                Signal so=s.get(i);
-//                if(so.getIndex()==1) {
-//                    soundCheck = true;
-//                }
-//            }
-//                return true;
-//        }
-//        else {
-//            for (int i=0;i<s.size();i++){
-//                Signal so=s.get(i);
-//                if (sig(so)){
-//                    f=true;
-//                    if(so.getIndex()==1) {
-//                        soundCheck = true;
-//                    }
-//                }
-//            }
-//            return f;
-//        }
-//    }
-
     private boolean sig(Signal s){
         boolean t=true;
         for (Signal so: currentSignals){
