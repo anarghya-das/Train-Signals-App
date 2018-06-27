@@ -48,7 +48,7 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_screen);
+        setContentView(R.layout.main_screen);
 //        setTraceLifecycle(true);
 //        String[] dogArr = getResources().getStringArray(R.array.dogs_list);
         backEnd=new BackEnd();
@@ -121,6 +121,8 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
         }else if (view==findViewById(R.id.clear3)){
             autoCompleteTextView3.setText("",false);
             direction.setVisibility(View.INVISIBLE);
+        }else if (view==findViewById(R.id.clear4)){
+            editText.setText("");
         }
     }
 
@@ -137,7 +139,8 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
             if (param.isEmpty() || param2.isEmpty() || param3.isEmpty()) {
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             } else if (String.valueOf(num).length() != 10) {
-                Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
+                editText.setError("Enter Valid Phone Number!");
+//                Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
             } else if (backEnd.checkTrainName(param, trains) && backEnd.checkTrainNumber(param2, trains)
                     && backEnd.checkTrackName(param3, trains)) {
                 new ServerPost(this, param3, param, param2, editText, trains, num,android_id).execute(backEndServer,

@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 
 public class GovPost extends AsyncTask<String,Void,String> {
     private String train;
@@ -17,13 +18,14 @@ public class GovPost extends AsyncTask<String,Void,String> {
     @SuppressLint("StaticFieldLeak")
     private SignalActivity signalActivity;
     private ThreadControl threadControl;
-
+    private ArrayList<Signal> collection;
 
     GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl){
         backEnd=new BackEnd();
         train=s;
         this.signalActivity=signalActivity;
         this.threadControl=threadControl;
+        collection=new ArrayList<>();
     }
 
     @Override
@@ -52,9 +54,9 @@ public class GovPost extends AsyncTask<String,Void,String> {
         if (s!=null){
             Train t=backEnd.getTrainFromName(train,backEnd.jsonGov(s));
             Log.d("result", t.getSignals().toString());
-            if (signalActivity.currentCheck(t.getSignals())) {
-                Log.d("result", "CHANGE");
-                signalActivity.createSignal();
+            if (t.getSignals().size()!=0) {
+                    Log.d("result", "CHANGE");
+                    signalActivity.createSignal(t.getSignals());
             }
         }
     }

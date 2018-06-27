@@ -25,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.eclipsesource.json.JsonObject;
@@ -36,11 +37,13 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
@@ -53,6 +56,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private ArrayList<Marker> allMarkers;
     private ArrayList<Marker> currentMarkers;
     private ArrayList<Signal> currentSignals;
+    private ArrayList<Signal> changedSignals;
     private ThreadControl threadControl;
     private String trainName,trackName;
     private int trainNo;
@@ -65,7 +69,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
     private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     private boolean soundCheck;
-    private static MediaPlayer mp;
+    private MediaPlayer mp,speech_green,speech_red,speech_yellow,speech_yellowyellow;
     private boolean locationPermission;
     private ArrayList<RequestTask> g;
 
@@ -81,10 +85,15 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         allMarkers = new ArrayList<>();
         currentMarkers = new ArrayList<>();
         currentSignals = new ArrayList<>();
+        changedSignals=new ArrayList<>();
         g=new ArrayList<>();
         user_Long=0.0;
         user_Lat=0.0;
         mp= MediaPlayer.create(this,R.raw.sound);
+        speech_green=MediaPlayer.create(this,R.raw.green);
+        speech_red=MediaPlayer.create(this,R.raw.red);
+        speech_yellow=MediaPlayer.create(this,R.raw.yellow);
+        speech_yellowyellow=MediaPlayer.create(this,R.raw.yellowyellow);
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         //setting this before the layout is inflated is a good idea
@@ -120,7 +129,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public MapView getMap() { return map; }
 
-    public void creatBottonBar(){
+    public void creatBottomBar(){
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         Menu menu= navigation.getMenu();
@@ -181,12 +190,13 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
                 mHandler.postDelayed(timerTask, 1);
             }};
 
-    public void setMapCenter(){
+    public void setMapCenter(GeoPoint g){
         mapController = map.getController();
         mapController.setZoom(15.6f);
-        GeoPoint g=new GeoPoint(22.578802, 88.365743);
+//        GeoPoint g=new GeoPoint(22.578802, 88.365743);
         mapController.setCenter(g);
     }
+
 
 
 
@@ -308,13 +318,22 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
     public void addMarker(Marker marker){
+        List<Overlay> l=map.getOverlays();
+        if (l instanceof  Marker){
+
+        }
         map.getOverlays().add(marker);
         map.invalidate();
     }
 
     public void addToMap(ArrayList<Signal> signals){
         for (int i=0;i<currentMarkers.size();i++){
-            addColorSignal(signals.get(i),currentMarkers.get(i));
+            Signal curr=signals.get(i);
+            if (curr.getIndex()==1){
+                mp.start();
+                playSpeech(curr);
+            }
+            addColorSignal(curr,currentMarkers.get(i));
             addMarker(currentMarkers.get(i));
         }
     }
@@ -325,22 +344,63 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         }
     }
 
-    public void addInitialSignals(ArrayList<Signal> signals) {
-        if (signals.size()!=0){
-            for (Signal s : signals) {
-                if (checkSignalWithMarker(s) != null) {
-                    currentSignals.add(s);
-                    currentMarkers.add(checkSignalWithMarker(s));
-                }
+//    public void addInitialSignals(ArrayList<Signal> signals) {
+//        if (signals.size()!=0){
+//            for (Signal s : signals) {
+//                if (checkSignalWithMarker(s) != null) {
+//                    currentSignals.add(s);
+//                    currentMarkers.add(checkSignalWithMarker(s));
+//                }
+//            }
+//            playSound();
+//            addToMap(currentSignals);
+//        }
+//    }
+
+    public boolean currentCheck(ArrayList<Signal> s){
+        boolean f=false;
+        for (int i=0;i<s.size();i++){
+            Signal so=s.get(i);
+            if (sig(so)){
+                changedSignals.add(so);
+                f=true;
             }
-            playSound();
-            addToMap(currentSignals);
         }
+        return f;
     }
 
-    private void playSound(){
-        if (soundCheck){
-            mp.start();
+    public void createMarkers(){
+        currentSignals.clear();
+        removeMarkers(currentMarkers);
+        currentMarkers.clear();
+        currentSignals.addAll(changedSignals);
+        addToMap(currentSignals);
+        currentMarkers.addAll(addMarkerArray(currentSignals));
+        changedSignals.clear();
+    }
+
+    private ArrayList<Marker> addMarkerArray(ArrayList<Signal> s){
+        ArrayList<Marker> m=new ArrayList<>();
+        for (Signal so: s){
+            m.add(checkSignalWithMarker(so));
+        }
+        return m;
+    }
+
+    private void playSpeech(Signal s) {
+        switch (s.getSignalAspect()){
+            case "Red":
+                speech_red.start();
+                break;
+            case "Green":
+                speech_green.start();
+                break;
+            case "Yellow":
+                speech_yellow.start();
+                break;
+            case "YellowYellow":
+                speech_yellowyellow.start();
+                break;
         }
     }
 
@@ -354,46 +414,46 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
 
-    public void updateSignals(ArrayList<Signal> signals) {
-        if (signals.size()!=0){
-            if (signalsComparison(signals)) {
-                Log.d("update", Boolean.toString(soundCheck));
-                removeMarkers(currentMarkers);
-                currentSignals.clear();
-                currentMarkers.clear();
-                addInitialSignals(signals);
-                if (currentMarkers.size() != 0) {
-                    Toast.makeText(this, "Updated Markers!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    }
+//    public void updateSignals(ArrayList<Signal> signals) {
+//        if (signals.size()!=0){
+//            if (signalsComparison(signals)) {
+//                Log.d("update", Boolean.toString(soundCheck));
+//                removeMarkers(currentMarkers);
+//                currentSignals.clear();
+//                currentMarkers.clear();
+//                addInitialSignals(signals);
+//                if (currentMarkers.size() != 0) {
+//                    Toast.makeText(this, "Updated Markers!", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        }
+//    }
 
-    private boolean signalsComparison(ArrayList<Signal> s){
-        boolean f=false;
-        soundCheck=false;
-        if (s.size()!=currentSignals.size()){
-            for (int i=0;i<s.size();i++) {
-                Signal so=s.get(i);
-                if(so.getIndex()==1) {
-                    soundCheck = true;
-                }
-            }
-                return true;
-        }
-        else {
-            for (int i=0;i<s.size();i++){
-                Signal so=s.get(i);
-                if (sig(so)){
-                    f=true;
-                    if(so.getIndex()==1) {
-                        soundCheck = true;
-                    }
-                }
-            }
-            return f;
-        }
-    }
+//    private boolean signalsComparison(ArrayList<Signal> s){
+//        boolean f=false;
+//        soundCheck=false;
+//        if (s.size()!=currentSignals.size()){
+//            for (int i=0;i<s.size();i++) {
+//                Signal so=s.get(i);
+//                if(so.getIndex()==1) {
+//                    soundCheck = true;
+//                }
+//            }
+//                return true;
+//        }
+//        else {
+//            for (int i=0;i<s.size();i++){
+//                Signal so=s.get(i);
+//                if (sig(so)){
+//                    f=true;
+//                    if(so.getIndex()==1) {
+//                        soundCheck = true;
+//                    }
+//                }
+//            }
+//            return f;
+//        }
+//    }
 
     private boolean sig(Signal s){
         boolean t=true;

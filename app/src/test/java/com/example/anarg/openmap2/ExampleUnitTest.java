@@ -28,8 +28,11 @@ public class ExampleUnitTest {
         BackEnd b=new BackEnd();
         String s=postagain(govURl,"asd");
         ArrayList<Train> t=b.jsonGov(s);
-        Train to=b.getTrainFromName("Bandel-Howrah Local",t);
-        System.out.println(s);
+        Train to=b.getTrainFromName("Howrah-Bandel Local",t);
+//        System.out.println(to);
+//        ArrayList<Train> ts=new ArrayList<>();
+//        System.out.println(ts.size());
+//        System.out.println(ts==null);
     }
     private String jsonPost(){
         JsonObject o=new JsonObject();

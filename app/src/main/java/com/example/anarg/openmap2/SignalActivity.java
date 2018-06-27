@@ -18,16 +18,15 @@ import android.widget.Toast;
 import com.eclipsesource.json.JsonObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class SignalActivity extends AppCompatActivity {
     private String trainName,trackName,android_id;
-    private ArrayList<Train> train;
     private int trainNo;
     private long phone;
-    private BackEnd backEnd;
-    private ArrayList<Signal> currentSignals;
-    private ArrayList<Signal> changedSignals;
-    private MediaPlayer mediaPlayer;
+    private ImageView img1,img2,img3;
+    private TextView tv1,tv2,tv3,tv4;
+    private MediaPlayer mediaPlayer,speech_green,speech_red,speech_yellow,speech_yellowyellow;
     private ThreadControl threadControl;
     private GovPost govPost;
     private ArrayList<GovPost> g;
@@ -37,10 +36,17 @@ public class SignalActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_signal);
-        backEnd=new BackEnd();
-        currentSignals=new ArrayList<>();
-        changedSignals=new ArrayList<>();
+        setContentView(R.layout.signal_screen);
+        img1=findViewById(R.id.firstSignal);
+        img1.setTag("");
+        img2=findViewById(R.id.secondSignal);
+        img2.setTag("");
+        img3=findViewById(R.id.thirdSignal);
+        img3.setTag("");
+        tv1=findViewById(R.id.trainName);
+        tv2=findViewById(R.id.trainNumber);
+        tv3=findViewById(R.id.trackName);
+        tv4=findViewById(R.id.phoneNumber);
         g=new ArrayList<>();
         Intent i = getIntent();
         trainName = i.getStringExtra("Signal");
@@ -48,7 +54,20 @@ public class SignalActivity extends AppCompatActivity {
         trackName = i.getStringExtra("TrackName");
         phone = i.getLongExtra("Phone", 0);
         android_id=i.getStringExtra("id");
+        tv1.setText("Train Name: "+trainName);
+        tv2.setText("Train Number: "+trainNo);
+        tv3.setText("Track Name: "+trackName);
+        tv4.setText("Phone Number: "+phone);
         mediaPlayer=MediaPlayer.create(this,R.raw.sound);
+        mediaPlayer.setLooping(false);
+        speech_green=MediaPlayer.create(this,R.raw.green);
+        speech_green.setLooping(false);
+        speech_red=MediaPlayer.create(this,R.raw.red);
+        speech_red.setLooping(false);
+        speech_yellow=MediaPlayer.create(this,R.raw.yellow);
+        speech_yellow.setLooping(false);
+        speech_yellowyellow=MediaPlayer.create(this,R.raw.yellowyellow);
+        speech_yellowyellow.setLooping(false);
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         Menu menu= navigation.getMenu();
@@ -140,33 +159,6 @@ public class SignalActivity extends AppCompatActivity {
             mHandler.postDelayed(timerTask, 1);
         }};
 
-    public boolean currentCheck(ArrayList<Signal> s){
-        boolean f=false;
-            for (int i=0;i<s.size();i++){
-                Signal so=s.get(i);
-                if (sig(so)){
-                    changedSignals.add(so);
-                    f=true;
-                }
-            }
-            if (f) {
-                currentSignals.clear();
-                currentSignals.addAll(changedSignals);
-                changedSignals.clear();
-            }
-            return f;
-        }
-
-    private boolean sig(Signal s){
-        boolean t=true;
-        for (Signal so: currentSignals){
-            if (so.getSignalID().equals(s.getSignalID())){
-                t=false;
-                break;
-            }
-        }
-        return t;
-    }
 
     private Integer getColor(Signal s){
         if (s!=null) {
@@ -187,42 +179,45 @@ public class SignalActivity extends AppCompatActivity {
             return R.drawable.medium_none;
         }
     }
-    public void createSignal(){
-        boolean tag1=false;
-        boolean tag2=false;
-        boolean tag3=false;
-        ImageView img1=findViewById(R.id.firstSignal);
-        ImageView img2=findViewById(R.id.secondSignal);
-        ImageView img3=findViewById(R.id.thirdSignal);
-        if (currentSignals!=null) {
-            if (currentSignals.size()==0){
+    public void createSignal(ArrayList<Signal> signals){
+        if (signals!=null) {
+            if (signals.size()==0){
                 img1.setImageResource(getColor(null));
                 img2.setImageResource(getColor(null));
                 img3.setImageResource(getColor(null));
             }else {
-                for (Signal s : currentSignals) {
-                    if (s.getIndex() == 1) {
-                        mediaPlayer.start();
-                        img1.setImageResource(getColor(s));
-                        tag1=true;
-                    } else if (s.getIndex() == 2) {
-                        img2.setImageResource(getColor(s));
-                        tag2=true;
-                    } else if (s.getIndex() == 3) {
-                        img3.setImageResource(getColor(s));
-                        tag3=true;
-                    }
+                for (Signal s : signals) {
+                        if (s.getIndex() == 1&&!s.getSignalID().equals(img1.getTag())) {
+                            img1.setImageResource(getColor(s));
+                            img1.setTag(s.getSignalID());
+                                mediaPlayer.start();
+                                playSpeech(s);
+                        } else if (s.getIndex() == 2&&!s.getSignalID().equals(img1.getTag())) {
+                            img2.setImageResource(getColor(s));
+                            img2.setTag(s.getSignalID());
+                        } else if (s.getIndex() == 3&&!s.getSignalID().equals(img1.getTag())) {
+                            img3.setImageResource(getColor(s));
+                            img3.setTag(s.getSignalID());
+                        }
                 }
             }
-           if (!tag1){
-               img1.setImageResource(getColor(null));
-           }
-           if (!tag2){
-               img2.setImageResource(getColor(null));
-           }
-           if (!tag3){
-               img3.setImageResource(getColor(null));
-           }
+        }
+    }
+
+    private void playSpeech(Signal s) {
+        switch (s.getSignalAspect()){
+            case "Red":
+                speech_red.start();
+                break;
+            case "Green":
+                speech_green.start();
+                break;
+            case "Yellow":
+                speech_yellow.start();
+                break;
+            case "YellowYellow":
+                speech_yellowyellow.start();
+                break;
         }
     }
 }
