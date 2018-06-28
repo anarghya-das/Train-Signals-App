@@ -53,10 +53,10 @@ public class GovPost extends AsyncTask<String,Void,String> {
     protected void onPostExecute(String s) {
         if (s!=null){
             Train t=backEnd.getTrainFromName(train,backEnd.jsonGov(s));
-            Log.d("result", t.getSignals().toString());
-            if (t.getSignals().size()!=0) {
-                    Log.d("result", "CHANGE");
-                    signalActivity.createSignal(t.getSignals());
+            if (t!=null&&t.getSignals().size()!=0) {
+                Log.d("result", t.getSignals().toString());
+                Log.d("result", "CHANGE");
+                    signalActivity.createSignal(t.getSignals(),t);
             }
         }
     }

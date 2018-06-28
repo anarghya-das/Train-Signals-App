@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Signal Tracking System</string>
+    <string name="heading">Welcome To Fog Signal</string>
     <string name="hint">Search Trains… </string>
     <string name="hint2">Search Train Numbers… </string>
     <string name="hint3">Search Track Names…</string>
@@ -27,4 +28,5 @@
     </string>
     <string name="title_signal">Signals</string>
     <string name="title_map">Map</string>
+    <string name="home">Home</string>
 </resources>

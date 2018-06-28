@@ -1,6 +1,7 @@
 package com.example.anarg.openmap2;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -11,6 +12,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,12 +24,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class SignalActivity extends AppCompatActivity {
-    private String trainName,trackName,android_id;
+    private String trainName,trackName,android_id,audioLanguage;
     private int trainNo;
     private long phone;
     private ImageView img1,img2,img3;
-    private TextView tv1,tv2,tv3,tv4;
-    private MediaPlayer mediaPlayer,speech_green,speech_red,speech_yellow,speech_yellowyellow;
+    private TextView tv1,tv2,tv3;
+    private Button b;
+    private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
+            speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
+            speech_yellowyellow_hi;
     private ThreadControl threadControl;
     private GovPost govPost;
     private ArrayList<GovPost> g;
@@ -43,10 +49,10 @@ public class SignalActivity extends AppCompatActivity {
         img2.setTag("");
         img3=findViewById(R.id.thirdSignal);
         img3.setTag("");
+        b= findViewById(R.id.langButton);
         tv1=findViewById(R.id.trainName);
         tv2=findViewById(R.id.trainNumber);
         tv3=findViewById(R.id.trackName);
-        tv4=findViewById(R.id.phoneNumber);
         g=new ArrayList<>();
         Intent i = getIntent();
         trainName = i.getStringExtra("Signal");
@@ -57,21 +63,22 @@ public class SignalActivity extends AppCompatActivity {
         tv1.setText("Train Name: "+trainName);
         tv2.setText("Train Number: "+trainNo);
         tv3.setText("Track Name: "+trackName);
-        tv4.setText("Phone Number: "+phone);
+        SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
+        audioLanguage= preferences.getString("audio","Hindi");
+        b.setText(audioLanguage);
         mediaPlayer=MediaPlayer.create(this,R.raw.sound);
-        mediaPlayer.setLooping(false);
-        speech_green=MediaPlayer.create(this,R.raw.green);
-        speech_green.setLooping(false);
-        speech_red=MediaPlayer.create(this,R.raw.red);
-        speech_red.setLooping(false);
-        speech_yellow=MediaPlayer.create(this,R.raw.yellow);
-        speech_yellow.setLooping(false);
-        speech_yellowyellow=MediaPlayer.create(this,R.raw.yellowyellow);
-        speech_yellowyellow.setLooping(false);
+        speech_green_en=MediaPlayer.create(this,R.raw.green_en);
+        speech_red_en=MediaPlayer.create(this,R.raw.red_en);
+        speech_yellow_en=MediaPlayer.create(this,R.raw.yellow_en);
+        speech_yellowyellow_en=MediaPlayer.create(this,R.raw.yellowyellow_en);
+        speech_green_hi=MediaPlayer.create(this,R.raw.green_hi);
+        speech_red_hi=MediaPlayer.create(this,R.raw.red_hi);
+        speech_yellow_hi=MediaPlayer.create(this,R.raw.yellow_hi);
+        speech_yellowyellow_hi=MediaPlayer.create(this,R.raw.yellowyellow_hi);
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         Menu menu= navigation.getMenu();
-        MenuItem menuItem= menu.getItem(0);
+        MenuItem menuItem= menu.getItem(1);
         menuItem.setChecked(true);
         threadControl=new ThreadControl();
         govPost= new GovPost(trainName,this,threadControl);
@@ -84,6 +91,9 @@ public class SignalActivity extends AppCompatActivity {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
+                case R.id.home:
+                    finish();
+                    break;
                 case  R.id.signal_view:
                     break;
                 case R.id.map_view:
@@ -179,7 +189,9 @@ public class SignalActivity extends AppCompatActivity {
             return R.drawable.medium_none;
         }
     }
-    public void createSignal(ArrayList<Signal> signals){
+    public void createSignal(ArrayList<Signal> signals,Train t){
+        trackName=t.getTrackName();
+        tv3.setText("Track Name: "+trackName);
         if (signals!=null) {
             if (signals.size()==0){
                 img1.setImageResource(getColor(null));
@@ -191,7 +203,7 @@ public class SignalActivity extends AppCompatActivity {
                             img1.setImageResource(getColor(s));
                             img1.setTag(s.getSignalID());
                                 mediaPlayer.start();
-                                playSpeech(s);
+                                playSpeech(s,audioLanguage);
                         } else if (s.getIndex() == 2&&!s.getSignalID().equals(img1.getTag())) {
                             img2.setImageResource(getColor(s));
                             img2.setTag(s.getSignalID());
@@ -204,20 +216,54 @@ public class SignalActivity extends AppCompatActivity {
         }
     }
 
-    private void playSpeech(Signal s) {
-        switch (s.getSignalAspect()){
-            case "Red":
-                speech_red.start();
-                break;
-            case "Green":
-                speech_green.start();
-                break;
-            case "Yellow":
-                speech_yellow.start();
-                break;
-            case "YellowYellow":
-                speech_yellowyellow.start();
-                break;
+    private void playSpeech(Signal s,String so) {
+        if (so.equals("Hindi")) {
+            switch (s.getSignalAspect()) {
+                case "Red":
+                    speech_red_hi.start();
+                    break;
+                case "Green":
+                    speech_green_hi.start();
+                    break;
+                case "Yellow":
+                    speech_yellow_hi.start();
+                    break;
+                case "YellowYellow":
+                    speech_yellowyellow_hi.start();
+                    break;
+            }
+        }
+        else if (so.equals("English")){
+            switch (s.getSignalAspect()) {
+                case "Red":
+                    speech_red_en.start();
+                    break;
+                case "Green":
+                    speech_green_en.start();
+                    break;
+                case "Yellow":
+                    speech_yellow_en.start();
+                    break;
+                case "YellowYellow":
+                    speech_yellowyellow_en.start();
+                    break;
+            }
+        }
+    }
+
+    public void changeLanguage(View view) {
+        SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
+        SharedPreferences.Editor editor=preferences.edit();
+        if (b.getText().equals("Hindi")){
+            audioLanguage="English";
+            b.setText(audioLanguage);
+            editor.putString("audio",audioLanguage);
+            editor.apply();
+        }else if (b.getText().equals("English")){
+            audioLanguage="Hindi";
+            b.setText(audioLanguage);
+            editor.putString("audio",audioLanguage);
+            editor.apply();
         }
     }
 }

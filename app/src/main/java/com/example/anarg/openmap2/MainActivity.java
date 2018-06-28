@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
@@ -24,6 +25,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.HttpAuthHandler;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -57,19 +59,22 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private ArrayList<Marker> currentMarkers;
     private ArrayList<Signal> currentSignals;
     private ArrayList<Signal> changedSignals;
+    private HashMap<Signal,Marker> signalMarker;
     private ThreadControl threadControl;
     private String trainName,trackName;
     private int trainNo;
     private long phone;
-    private String android_id;
+    private String android_id,audioLanguage;
     private IGeoPoint myLocation;
     private RequestTask requestTask;
     private double user_Lat,user_Long;
     private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
     private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
-    private boolean soundCheck;
-    private MediaPlayer mp,speech_green,speech_red,speech_yellow,speech_yellowyellow;
+    private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
+            speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
+            speech_yellowyellow_hi;
+    private Button b;
     private boolean locationPermission;
     private ArrayList<RequestTask> g;
 
@@ -80,20 +85,15 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         //handle permissions first, before map is created. not depicted here
         // Write you code here if permission already given.
         //load/initialize the osmdroid configuration, this can be done
-        soundCheck=false;
         locationPermission=false;
         allMarkers = new ArrayList<>();
         currentMarkers = new ArrayList<>();
         currentSignals = new ArrayList<>();
         changedSignals=new ArrayList<>();
+        signalMarker=new HashMap<>();
         g=new ArrayList<>();
         user_Long=0.0;
         user_Lat=0.0;
-        mp= MediaPlayer.create(this,R.raw.sound);
-        speech_green=MediaPlayer.create(this,R.raw.green);
-        speech_red=MediaPlayer.create(this,R.raw.red);
-        speech_yellow=MediaPlayer.create(this,R.raw.yellow);
-        speech_yellowyellow=MediaPlayer.create(this,R.raw.yellowyellow);
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         //setting this before the layout is inflated is a good idea
@@ -103,8 +103,21 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
         //inflate and create the map
         setContentView(R.layout.activity_main);
+        b=findViewById(R.id.langButton);
         backend = new BackEnd();
         threadControl = new ThreadControl();
+        SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
+        audioLanguage= preferences.getString("audio","Hindi");
+        b.setText(audioLanguage);
+        mediaPlayer=MediaPlayer.create(this,R.raw.sound);
+        speech_green_en=MediaPlayer.create(this,R.raw.green_en);
+        speech_red_en=MediaPlayer.create(this,R.raw.red_en);
+        speech_yellow_en=MediaPlayer.create(this,R.raw.yellow_en);
+        speech_yellowyellow_en=MediaPlayer.create(this,R.raw.yellowyellow_en);
+        speech_green_hi=MediaPlayer.create(this,R.raw.green_hi);
+        speech_red_hi=MediaPlayer.create(this,R.raw.red_hi);
+        speech_yellow_hi=MediaPlayer.create(this,R.raw.yellow_hi);
+        speech_yellowyellow_hi=MediaPlayer.create(this,R.raw.yellowyellow_hi);
         Intent i = getIntent();
         trainName = i.getStringExtra("Signal");
         trainNo = i.getIntExtra("TrainNumber",0);
@@ -129,11 +142,11 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
 
     public MapView getMap() { return map; }
 
-    public void creatBottomBar(){
+    public void createBottomBar(){
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         Menu menu= navigation.getMenu();
-        MenuItem menuItem= menu.getItem(1);
+        MenuItem menuItem= menu.getItem(2);
         menuItem.setChecked(true);
     }
 
@@ -150,6 +163,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
+                case R.id.home:
+                    break;
                 case R.id.map_view:
                     break;
                 case R.id.signal_view:
@@ -318,10 +333,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
     public void addMarker(Marker marker){
-        List<Overlay> l=map.getOverlays();
-        if (l instanceof  Marker){
-
-        }
         map.getOverlays().add(marker);
         map.invalidate();
     }
@@ -330,8 +341,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         for (int i=0;i<currentMarkers.size();i++){
             Signal curr=signals.get(i);
             if (curr.getIndex()==1){
-                mp.start();
-                playSpeech(curr);
+                mediaPlayer.start();
+                playSpeech(curr,audioLanguage);
             }
             addColorSignal(curr,currentMarkers.get(i));
             addMarker(currentMarkers.get(i));
@@ -344,18 +355,69 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         }
     }
 
-//    public void addInitialSignals(ArrayList<Signal> signals) {
-//        if (signals.size()!=0){
-//            for (Signal s : signals) {
-//                if (checkSignalWithMarker(s) != null) {
-//                    currentSignals.add(s);
-//                    currentMarkers.add(checkSignalWithMarker(s));
-//                }
-//            }
-//            playSound();
-//            addToMap(currentSignals);
-//        }
-//    }
+    //Experiment
+    private Signal fromIndex(int n){
+        for (Signal s: signalMarker.keySet()){
+            if (s.getIndex()==n){
+                return s;
+            }
+        }
+        return null;
+    }
+    public void updateSignalMap(ArrayList<Signal> s){
+        boolean change=false;
+        if (s.size()!=0) {
+            for (Signal si : s) {
+                Signal fromHash = fromIndex(si.getIndex());
+                if (fromHash != null && checkSignalWithMarker(si) != null) {
+                    if (!fromHash.getSignalID().equals(si.getSignalID())) {
+                        change=true;
+                        signalMarker.remove(fromHash);
+                        signalMarker.put(si, checkSignalWithMarker(si));
+                    }
+                } else if (fromHash == null && checkSignalWithMarker(si) != null) {
+                    signalMarker.put(si, checkSignalWithMarker(si));
+                }
+            }
+            if (change) {
+                addToMap2(signalMarker);
+            }
+        }
+    }
+    private void addToMap2(HashMap<Signal,Marker> m){
+        for (Signal s: m.keySet()){
+            if (s.getIndex()==1){
+                mediaPlayer.start();
+                playSpeech(s,audioLanguage);
+            }
+            addColorSignal(s,m.get(s));
+            addMarker(m.get(s));
+        }
+    }
+    public void addSignalToMap(ArrayList<Signal> signals){
+        if (signals.size()!=0) {
+            for (Signal s : signals) {
+                Marker m = checkSignalWithMarker(s);
+                if (m != null) {
+                    signalMarker.put(s, m);
+                }
+            }
+            addToMap2(signalMarker);
+        }
+    }
+    //close
+
+    public void addInitialSignals(ArrayList<Signal> signals) {
+        if (signals.size()!=0){
+            for (Signal s : signals) {
+                if (checkSignalWithMarker(s) != null) {
+                    currentSignals.add(s);
+                    currentMarkers.add(checkSignalWithMarker(s));
+                }
+            }
+            addToMap(currentSignals);
+        }
+    }
 
     public boolean currentCheck(ArrayList<Signal> s){
         boolean f=false;
@@ -386,21 +448,38 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         }
         return m;
     }
-
-    private void playSpeech(Signal s) {
-        switch (s.getSignalAspect()){
-            case "Red":
-                speech_red.start();
-                break;
-            case "Green":
-                speech_green.start();
-                break;
-            case "Yellow":
-                speech_yellow.start();
-                break;
-            case "YellowYellow":
-                speech_yellowyellow.start();
-                break;
+    private void playSpeech(Signal s,String so) {
+        if (so.equals("Hindi")) {
+            switch (s.getSignalAspect()) {
+                case "Red":
+                    speech_red_hi.start();
+                    break;
+                case "Green":
+                    speech_green_hi.start();
+                    break;
+                case "Yellow":
+                    speech_yellow_hi.start();
+                    break;
+                case "YellowYellow":
+                    speech_yellowyellow_hi.start();
+                    break;
+            }
+        }
+        else if (so.equals("English")){
+            switch (s.getSignalAspect()) {
+                case "Red":
+                    speech_red_en.start();
+                    break;
+                case "Green":
+                    speech_green_en.start();
+                    break;
+                case "Yellow":
+                    speech_yellow_en.start();
+                    break;
+                case "YellowYellow":
+                    speech_yellowyellow_en.start();
+                    break;
+            }
         }
     }
 
@@ -485,5 +564,21 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             finish();
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    public void changeLanguage(View view) {
+        SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
+        SharedPreferences.Editor editor=preferences.edit();
+        if (b.getText().equals("Hindi")){
+            audioLanguage="English";
+            b.setText(audioLanguage);
+            editor.putString("audio",audioLanguage);
+            editor.apply();
+        }else if (b.getText().equals("English")){
+            audioLanguage="Hindi";
+            b.setText(audioLanguage);
+            editor.putString("audio",audioLanguage);
+            editor.apply();
+        }
     }
 }

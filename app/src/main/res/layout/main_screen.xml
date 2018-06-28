@@ -11,6 +11,8 @@
     android:layout_height="match_parent"
     tools:ignore="ScrollViewSize">
 
+
+
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
@@ -22,7 +24,18 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.3"
         android:background="@color/colorPrimaryDark"
-        android:orientation="horizontal" />
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_marginTop="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/heading"
+            android:textSize="30sp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Title.Inverse" />
+
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/imageView"

@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:fillViewport="true"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:keepScreenOn="true"
@@ -22,9 +27,10 @@
 
     <LinearLayout
         android:id="@+id/linearLayout2"
-        android:layout_width="250dp"
-        android:layout_height="110dp"
+        android:layout_width="300dp"
+        android:layout_height="100dp"
         android:layout_marginTop="64dp"
+        android:padding="3dp"
         android:background="@drawable/layout_bg"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
@@ -64,18 +70,6 @@
             android:layout_marginStart="3dp"
             android:layout_marginTop="3dp"
             android:text="Track Name:"
-            android:textColor="@android:color/black"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/phoneNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="3dp"
-            android:layout_marginStart="3dp"
-            android:layout_marginTop="3dp"
-            android:text="Phone Number:"
             android:textColor="@android:color/black"
             android:textSize="17sp"
             android:textStyle="bold" />
@@ -179,6 +173,18 @@
 
     </LinearLayout>
 
+    <Button
+        android:id="@+id/langButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="64dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
+        android:onClick="changeLanguage"
+        android:text="Hindi"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <android.support.design.widget.BottomNavigationView
         android:id="@+id/navigation"
         android:layout_width="0dp"
@@ -192,3 +198,4 @@
         app:menu="@menu/navigation" />
 
 </android.support.constraint.ConstraintLayout>
+</ScrollView>

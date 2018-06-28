@@ -38,7 +38,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
     @Override
     protected void onPreExecute() {
         if (gp.getMap()==null) {
-            gp.creatBottomBar();
+            gp.createBottomBar();
             gp.createMap();
         }
     }
@@ -88,10 +88,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 Train t = b.getTrainFromName(param, b.jsonGov(result.get(1)));
                 gp.populateMarkers(h);
-                if (gp.currentCheck(t.getSignals())){
-                    gp.createMarkers();
-                }
-//                gp.addInitialSignals(t.getSignals());
+                gp.addSignalToMap(t.getSignals());
                 gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
             }
             if (result.size() == 3) {
@@ -99,10 +96,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     Train t = b.getTrainFromName(param, b.jsonGov(result.get(0)));
                     if (t!=null){
                         Log.d("list", "RUN");
-                        if (gp.currentCheck(t.getSignals())){
-                            gp.createMarkers();
-                        }
-//                        gp.updateSignals(t.getSignals());
+                        gp.updateSignalMap(t.getSignals());
                     }
                 }
                 if (!result.get(1).equals("")){
