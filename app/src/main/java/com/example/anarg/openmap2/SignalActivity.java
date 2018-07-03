@@ -1,12 +1,17 @@
 package com.example.anarg.openmap2;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,13 +28,14 @@ import com.eclipsesource.json.JsonObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class SignalActivity extends AppCompatActivity {
+public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private String trainName,trackName,android_id,audioLanguage;
     private int trainNo;
     private long phone;
     private ImageView img1,img2,img3;
     private TextView tv1,tv2,tv3;
-    private Button b;
+    private TextView b;
+    private boolean mediaPause;
     private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
             speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
             speech_yellowyellow_hi;
@@ -37,12 +43,18 @@ public class SignalActivity extends AppCompatActivity {
     private GovPost govPost;
     private ArrayList<GovPost> g;
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
+//    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.signal_screen);
+        mediaPause=false;
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        am.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                am.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                0);
         img1=findViewById(R.id.firstSignal);
         img1.setTag("");
         img2=findViewById(R.id.secondSignal);
@@ -81,7 +93,7 @@ public class SignalActivity extends AppCompatActivity {
         MenuItem menuItem= menu.getItem(1);
         menuItem.setChecked(true);
         threadControl=new ThreadControl();
-        govPost= new GovPost(trainName,this,threadControl);
+        govPost= new GovPost(trainName,this,threadControl,this);
         govPost.execute(govURl);
     }
 
@@ -128,15 +140,55 @@ public class SignalActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
+//        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        endAllSounds();
         for (GovPost go: g) {
             go.cancel(true);
             threadControl.cancel();
+        }
+    }
+
+    @Override
+    public void processFinish(String output) {
+        if (output.equals("null")){
+            threadControl.pause();
+            mHandler.removeCallbacks(timerTask);
+            exceptionRaised("Connection Error","There was a problem connecting to the Server.\nPlease try again later.");
+        }
+    }
+
+    private void endAllSounds() {
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+        if (speech_green_en.isPlaying()) {
+            speech_green_en.stop();
+        }
+        if (speech_green_hi.isPlaying()) {
+            speech_green_en.stop();
+        }
+        if (speech_red_en.isPlaying()) {
+            speech_red_en.stop();
+        }
+        if (speech_red_hi.isPlaying()) {
+            speech_red_hi.stop();
+        }
+        if (speech_yellow_en.isPlaying()) {
+            speech_yellow_en.stop();
+        }
+        if (speech_yellow_hi.isPlaying()) {
+            speech_yellow_hi.stop();
+        }
+        if (speech_yellowyellow_en.isPlaying()) {
+            speech_yellowyellow_en.stop();
+        }
+        if (speech_yellowyellow_hi.isPlaying()) {
+            speech_yellowyellow_hi.stop();
         }
     }
 
@@ -162,8 +214,8 @@ public class SignalActivity extends AppCompatActivity {
         @Override
         public void run() {
             if (govPost.getStatus()== AsyncTask.Status.FINISHED) {
-                govPost= new GovPost(trainName,SignalActivity.this,threadControl);
-                govPost.execute(govURl,backEndServer,jsonPost("active"));
+                govPost= new GovPost(trainName,SignalActivity.this,threadControl,SignalActivity.this);
+                govPost.execute(govURl); //backEndServer,jsonPost("active")
                 g.add(govPost);
             }
             mHandler.postDelayed(timerTask, 1);
@@ -202,8 +254,10 @@ public class SignalActivity extends AppCompatActivity {
                         if (s.getIndex() == 1&&!s.getSignalID().equals(img1.getTag())) {
                             img1.setImageResource(getColor(s));
                             img1.setTag(s.getSignalID());
+                            if(!mediaPause) {
                                 mediaPlayer.start();
-                                playSpeech(s,audioLanguage);
+                                playSpeech(s, audioLanguage);
+                            }
                         } else if (s.getIndex() == 2&&!s.getSignalID().equals(img1.getTag())) {
                             img2.setImageResource(getColor(s));
                             img2.setTag(s.getSignalID());
@@ -266,4 +320,46 @@ public class SignalActivity extends AppCompatActivity {
             editor.apply();
         }
     }
+
+    public void soundChange(View view) {
+        FloatingActionButton button= findViewById(R.id.soundButton);
+        if (button.getTag().equals("audio")){
+            mediaPause=true;
+            button.setTag("noaudio");
+            button.setImageResource(R.drawable.noaudio);
+        }else if (button.getTag().equals("noaudio")){
+            mediaPause=false;
+            button.setTag("audio");
+            button.setImageResource(R.drawable.audio);
+        }
+    }
+
+    public void exceptionRaised(String title,String body) {
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage(body)
+                .setTitle(title);
+        builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+                Intent i=getIntent();
+                startActivity(i);
+            }
+        });
+        builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent i=new Intent(SignalActivity.this,MainScreenActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                i.putExtra("Exit",true);
+                startActivity(i);
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setCancelable(false);
+        dialog.show();
+    }
+
 }

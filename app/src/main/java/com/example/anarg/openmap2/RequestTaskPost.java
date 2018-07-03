@@ -2,32 +2,37 @@ package com.example.anarg.openmap2;
 
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
-import android.widget.Toast;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 
 
 public class RequestTaskPost extends AsyncTask<String,String,String> {
+    private AsyncResponse delegate;
     private BackEnd backEnd;
+    private final int CONN_WAIT_TIME = 5000;
+    private final int CONN_DATA_WAIT_TIME = 2000;
     @SuppressLint("StaticFieldLeak")
     MainScreenActivity m;
 
-    RequestTaskPost(MainScreenActivity m){
+    RequestTaskPost(MainScreenActivity m,AsyncResponse delegate){
         backEnd=new BackEnd();
         this.m=m;
+        this.delegate=delegate;
     }
 
     @Override
     protected String doInBackground(String... strings) {
         try {
-            return post(strings[0],"asd");
-        } catch (Exception e) {
+            return post(strings[0],"string");
+        }catch (SocketTimeoutException e){
+            return "connection";
+        } catch (IOException e) {
             return null;
         }
     }
@@ -35,7 +40,9 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
     @Override
     protected void onPostExecute(String s) {
         if (s==null){
-            m.exceptionRaised();
+            delegate.processFinish("null");
+        }else if (s.equals("connection")){
+            delegate.processFinish("null2");
         }
         else {
             ArrayList<Train> allTrains = backEnd.jsonGov(s);
@@ -43,6 +50,7 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
             m.createTrainNameView(trainArray(allTrains), allTrains);
             m.createTrainIDView(trainID(allTrains), allTrains);
             m.createTrackNameView(trackName(allTrains),allTrains);
+            delegate.processFinish("done");
         }
     }
     private String post(String u, String json) throws IOException {
@@ -50,8 +58,11 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
             // This is getting the url from the string we passed in
             URL url = new URL(u);
 
+
             // Create the urlConnection
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setConnectTimeout(CONN_WAIT_TIME);
+            urlConnection.setReadTimeout(CONN_DATA_WAIT_TIME);
 
 
             urlConnection.setDoInput(true);
@@ -64,6 +75,7 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
 
             // OPTIONAL - Sets an authorization header
             urlConnection.setRequestProperty("Authorization", "someAuthString");
+
 
             // Send the post body
             if (json != null&&!json.isEmpty()) {

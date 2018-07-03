@@ -1,37 +1,34 @@
 package com.example.anarg.openmap2;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.HttpAuthHandler;
-import android.widget.Button;
-import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
-
 import com.eclipsesource.json.JsonObject;
-
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
@@ -39,26 +36,19 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
-
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 
-public class MainActivity extends AppCompatActivity { //AppCompatActivity
+public class MainActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     private MapView map = null;
     private IMapController mapController;
     private MyLocationNewOverlay myLocationoverlay;
     private BackEnd backend;
     private ArrayList<Marker> allMarkers;
-    private ArrayList<Marker> currentMarkers;
-    private ArrayList<Signal> currentSignals;
-    private ArrayList<Signal> changedSignals;
     private HashMap<Signal,Marker> signalMarker;
     private ThreadControl threadControl;
     private String trainName,trackName;
@@ -70,11 +60,12 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     private double user_Lat,user_Long;
     private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
+//    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
             speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
             speech_yellowyellow_hi;
-    private Button b;
+    private boolean mediaPause,firstChange;
+    private TextView b;
     private boolean locationPermission;
     private ArrayList<RequestTask> g;
 
@@ -86,10 +77,9 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         // Write you code here if permission already given.
         //load/initialize the osmdroid configuration, this can be done
         locationPermission=false;
+        mediaPause=false;
+        firstChange=false;
         allMarkers = new ArrayList<>();
-        currentMarkers = new ArrayList<>();
-        currentSignals = new ArrayList<>();
-        changedSignals=new ArrayList<>();
         signalMarker=new HashMap<>();
         g=new ArrayList<>();
         user_Long=0.0;
@@ -103,6 +93,11 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
         //inflate and create the map
         setContentView(R.layout.activity_main);
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        am.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                am.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                0);
         b=findViewById(R.id.langButton);
         backend = new BackEnd();
         threadControl = new ThreadControl();
@@ -124,7 +119,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         trackName = i.getStringExtra("TrackName");
         phone = i.getLongExtra("Phone", 0);
         android_id = i.getStringExtra("id");
-        requestTask = new RequestTask(backend, this, threadControl, trainName);
+        requestTask = new RequestTask(backend, this, threadControl, trainName,this);
         requestTask.execute(reqURl, govURl);
 //        setMapCenter();
         askPermission(Manifest.permission.ACCESS_FINE_LOCATION,MY_PERMISSIONS_REQUEST_LOCATION);
@@ -133,10 +128,21 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             myLocationoverlay = new MyLocationNewOverlay(gp, map);
             myLocationoverlay.enableMyLocation();
             myLocationoverlay.setDrawAccuracyEnabled(false);
+            Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
+            myLocationoverlay.setPersonIcon(bitmapIcon);
             map.getOverlays().add(myLocationoverlay);
             myLocation=myLocationoverlay.getMyLocation();
             map.invalidate();
 //            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void processFinish(String output) {
+        if (output.equals("null")){
+            threadControl.pause();
+            mHandler.removeCallbacks(timerTask);
+            exceptionRaised("Connection Error","There was a problem connecting to the Server.\nPlease try again later.");
         }
     }
 
@@ -198,8 +204,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             @Override
             public void run() {
                 if (requestTask.getStatus()== AsyncTask.Status.FINISHED) {
-                    requestTask = new RequestTask(backend, MainActivity.this, threadControl, trainName);
-                    requestTask.execute("", govURl, backEndServer);
+                    requestTask = new RequestTask(backend, MainActivity.this, threadControl, trainName,MainActivity.this);
+                    requestTask.execute("", govURl);// backEndServer
                     g.add(requestTask);
                 }
                 mHandler.postDelayed(timerTask, 1);
@@ -274,16 +280,46 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
         }
     }
+    private void endAllSounds() {
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+        if (speech_green_en.isPlaying()) {
+            speech_green_en.stop();
+        }
+        if (speech_green_hi.isPlaying()) {
+            speech_green_en.stop();
+        }
+        if (speech_red_en.isPlaying()) {
+            speech_red_en.stop();
+        }
+        if (speech_red_hi.isPlaying()) {
+            speech_red_hi.stop();
+        }
+        if (speech_yellow_en.isPlaying()) {
+            speech_yellow_en.stop();
+        }
+        if (speech_yellow_hi.isPlaying()) {
+            speech_yellow_hi.stop();
+        }
+        if (speech_yellowyellow_en.isPlaying()) {
+            speech_yellowyellow_en.stop();
+        }
+        if (speech_yellowyellow_hi.isPlaying()) {
+            speech_yellowyellow_hi.stop();
+        }
+    }
 
     @Override
     protected void onStop() {
         super.onStop();
-        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
+//        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        endAllSounds();
         for (RequestTask go: g) {
             go.cancel(true);
             threadControl.cancel();
@@ -337,22 +373,8 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
         map.invalidate();
     }
 
-    public void addToMap(ArrayList<Signal> signals){
-        for (int i=0;i<currentMarkers.size();i++){
-            Signal curr=signals.get(i);
-            if (curr.getIndex()==1){
-                mediaPlayer.start();
-                playSpeech(curr,audioLanguage);
-            }
-            addColorSignal(curr,currentMarkers.get(i));
-            addMarker(currentMarkers.get(i));
-        }
-    }
-
-    public void removeMarkers(ArrayList<Marker> marker){
-        for (Marker m: marker) {
-            map.getOverlays().remove(m);
-        }
+    public void removeMarker(Marker marker){
+            map.getOverlays().remove(marker);
     }
 
     //Experiment
@@ -366,16 +388,24 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
     public void updateSignalMap(ArrayList<Signal> s){
         boolean change=false;
+        firstChange=false;
         if (s.size()!=0) {
             for (Signal si : s) {
                 Signal fromHash = fromIndex(si.getIndex());
                 if (fromHash != null && checkSignalWithMarker(si) != null) {
                     if (!fromHash.getSignalID().equals(si.getSignalID())) {
+                        if (si.getIndex()==1){
+                            firstChange=true;
+                        }
                         change=true;
+                        removeMarker(signalMarker.get(fromHash));
                         signalMarker.remove(fromHash);
                         signalMarker.put(si, checkSignalWithMarker(si));
                     }
                 } else if (fromHash == null && checkSignalWithMarker(si) != null) {
+                    if (si.getIndex()==1){
+                        firstChange=true;
+                    }
                     signalMarker.put(si, checkSignalWithMarker(si));
                 }
             }
@@ -386,7 +416,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
     private void addToMap2(HashMap<Signal,Marker> m){
         for (Signal s: m.keySet()){
-            if (s.getIndex()==1){
+            if (s.getIndex()==1&&firstChange&&!mediaPause){
                 mediaPlayer.start();
                 playSpeech(s,audioLanguage);
             }
@@ -399,6 +429,9 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             for (Signal s : signals) {
                 Marker m = checkSignalWithMarker(s);
                 if (m != null) {
+                    if (s.getIndex()==1){
+                        firstChange=true;
+                    }
                     signalMarker.put(s, m);
                 }
             }
@@ -407,47 +440,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
     //close
 
-    public void addInitialSignals(ArrayList<Signal> signals) {
-        if (signals.size()!=0){
-            for (Signal s : signals) {
-                if (checkSignalWithMarker(s) != null) {
-                    currentSignals.add(s);
-                    currentMarkers.add(checkSignalWithMarker(s));
-                }
-            }
-            addToMap(currentSignals);
-        }
-    }
-
-    public boolean currentCheck(ArrayList<Signal> s){
-        boolean f=false;
-        for (int i=0;i<s.size();i++){
-            Signal so=s.get(i);
-            if (sig(so)){
-                changedSignals.add(so);
-                f=true;
-            }
-        }
-        return f;
-    }
-
-    public void createMarkers(){
-        currentSignals.clear();
-        removeMarkers(currentMarkers);
-        currentMarkers.clear();
-        currentSignals.addAll(changedSignals);
-        addToMap(currentSignals);
-        currentMarkers.addAll(addMarkerArray(currentSignals));
-        changedSignals.clear();
-    }
-
-    private ArrayList<Marker> addMarkerArray(ArrayList<Signal> s){
-        ArrayList<Marker> m=new ArrayList<>();
-        for (Signal so: s){
-            m.add(checkSignalWithMarker(so));
-        }
-        return m;
-    }
     private void playSpeech(Signal s,String so) {
         if (so.equals("Hindi")) {
             switch (s.getSignalAspect()) {
@@ -493,17 +485,6 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
     }
 
 
-    private boolean sig(Signal s){
-        boolean t=true;
-        for (Signal so: currentSignals){
-            if (so.getSignalID().equals(s.getSignalID())){
-                t=false;
-                break;
-            }
-        }
-        return t;
-    }
-
     private void askPermission(String permission,int requestCode){
         if (ContextCompat.checkSelfPermission(this,permission)!=PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this,new String[]{permission},requestCode);
@@ -541,19 +522,7 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             // permissions this app might request.
         }
     }
-    public void exceptionRaised(String s) {
-        AlertDialog.Builder builder=new AlertDialog.Builder(this);
-        builder.setMessage(s)
-                .setTitle("Error");
-        builder.setNegativeButton("Exit", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finish();
-            }
-        });
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
+
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)
@@ -581,4 +550,45 @@ public class MainActivity extends AppCompatActivity { //AppCompatActivity
             editor.apply();
         }
     }
+
+    public void soundChange(View view) {
+        FloatingActionButton button= findViewById(R.id.soundButton);
+        if (button.getTag().equals("audio")){
+            mediaPause=true;
+            button.setTag("noaudio");
+            button.setImageResource(R.drawable.noaudio);
+        }else if (button.getTag().equals("noaudio")){
+            mediaPause=false;
+            button.setTag("audio");
+            button.setImageResource(R.drawable.audio);
+        }
+    }
+
+    public void exceptionRaised(String title,String body) {
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage(body)
+                .setTitle(title);
+        builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+                Intent i=getIntent();
+                startActivity(i);
+            }
+        });
+        builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent i=new Intent(MainActivity.this,MainScreenActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                i.putExtra("Exit",true);
+                startActivity(i);
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setCancelable(false);
+        dialog.show();
+    }
+
 }

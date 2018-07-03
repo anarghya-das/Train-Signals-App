@@ -26,10 +26,10 @@ public class ExampleUnitTest {
     @Test
     public void JsonTest() throws IOException {
         BackEnd b=new BackEnd();
-        String s=postagain(govURl,"asd");
+        String s=postagain(govURl,"sf");
         ArrayList<Train> t=b.jsonGov(s);
         Train to=b.getTrainFromName("Howrah-Bandel Local",t);
-        System.out.println(jsonPost());
+        System.out.println(s);
 //        System.out.println(to);
 //        ArrayList<Train> ts=new ArrayList<>();
 //        System.out.println(ts.size());

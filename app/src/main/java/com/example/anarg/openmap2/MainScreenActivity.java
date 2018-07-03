@@ -1,9 +1,13 @@
 package com.example.anarg.openmap2;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
@@ -34,39 +38,58 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
-public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
+public class MainScreenActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
+//    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     private AutoCompleteTextView autocompleteView,autocompleteView2,autoCompleteTextView3;
     private EditText editText;
     private TextView direction;
     private BackEnd backEnd;
     private String android_id;
     private ArrayList<Train> trains;
+    private AlertDialog dialog;
 
     @SuppressLint({"HardwareIds", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_screen);
-//        setTraceLifecycle(true);
-//        String[] dogArr = getResources().getStringArray(R.array.dogs_list);
-        backEnd=new BackEnd();
-        trains=new ArrayList<>();
-        android_id = Settings.Secure.getString(this.getContentResolver(),
-                Settings.Secure.ANDROID_ID);
-        autocompleteView = findViewById(R.id.autocompleteView);
-        autocompleteView2 = findViewById(R.id.autocompleteView2);
-        autoCompleteTextView3= findViewById(R.id.autocompleteView3);
-        editText=findViewById(R.id.editText);
-        direction= findViewById(R.id.directionView);
-        RequestTaskPost requestTaskPost=new RequestTaskPost(this);
-        requestTaskPost.execute(govURl);
-        Log.d("pref", "onCreate:");
-        SharedPreferences pref = getSharedPreferences("myPref", MODE_PRIVATE);
-        long n=pref.getLong("number",0);
-        if(n!=0) {
-            editText.setText(Long.toString(n));
+        if (getIntent().getBooleanExtra("Exit", false))
+        {
+            finish();
+        }else if (connectivityCheck()) {
+            backEnd = new BackEnd();
+            trains = new ArrayList<>();
+            android_id = Settings.Secure.getString(this.getContentResolver(),
+                    Settings.Secure.ANDROID_ID);
+            autocompleteView = findViewById(R.id.autocompleteView);
+            autocompleteView2 = findViewById(R.id.autocompleteView2);
+            autoCompleteTextView3 = findViewById(R.id.autocompleteView3);
+            editText = findViewById(R.id.editText);
+            direction = findViewById(R.id.directionView);
+            RequestTaskPost requestTaskPost = new RequestTaskPost(this, this);
+            requestTaskPost.execute(govURl);
+            SharedPreferences pref = getSharedPreferences("myPref", MODE_PRIVATE);
+            long n = pref.getLong("number", 0);
+            if (n != 0) {
+                editText.setText(Long.toString(n));
+            }
+            if (requestTaskPost.getStatus()==RequestTask.Status.RUNNING){
+                load();
+            }
+        }else{
+            exceptionRaised("Connectivity Error","Enable mobile data or WiFi to use this app.");
+        }
+    }
+
+    @Override
+    public void processFinish(String output) {
+        dialog.hide();
+        if (output.equals("null")){
+            exceptionRaised("Server Problem","Cannot connect to the Server.Please try again Later.");
+
+        }else if (output.equals("null2")){
+            exceptionRaised("Network Problem","Please check your network Connection and Try again Later.");
         }
     }
 
@@ -100,7 +123,6 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
         List<String> trainList = Arrays.asList(arr);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, layoutItemId, trainList);
         autoCompleteTextView3.setAdapter(adapter);
-        autoCompleteTextView3.setRawInputType(InputType.TYPE_CLASS_NUMBER);
         autoCompleteTextView3.setOnItemClickListener(new onItemClickListener(allTrains,autocompleteView,direction,"adapter 3",this));
     }
 
@@ -143,9 +165,15 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
 //                Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
             } else if (backEnd.checkTrainName(param, trains) && backEnd.checkTrainNumber(param2, trains)
                     && backEnd.checkTrackName(param3, trains)) {
-                new ServerPost(this, param3, param, param2, editText, trains, num,android_id).execute(backEndServer,
-                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
-//                Toast.makeText(this,"Validating Input...",Toast.LENGTH_SHORT).show();
+                Intent i = new Intent(this, SignalActivity.class);
+                i.putExtra("Signal", param);
+                i.putExtra("TrainNumber",Integer.parseInt(param2));
+                i.putExtra("TrackName",param3);
+                i.putExtra("Phone",num);
+                i.putExtra("id",android_id);
+                this.startActivity(i);
+//                new ServerPost(this, param3, param, param2, editText, trains, num,android_id).execute(backEndServer,
+//                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
             } else{
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             }
@@ -171,6 +199,49 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
         return o.toString();
     }
 
+    private boolean connectivityCheck(){
+        boolean result=false;
+        ConnectivityManager connectivitymanager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo[] networkInfo = connectivitymanager.getAllNetworkInfo();
+        for (NetworkInfo netInfo : networkInfo) {
+            if (netInfo.getTypeName().equalsIgnoreCase("WIFI")) {
+                if (netInfo.isConnected()) {
+                    result=true;
+                }
+            }
+            if (netInfo.getTypeName().equalsIgnoreCase("MOBILE")) {
+                if (netInfo.isConnected()) {
+                    result=true;
+                }
+            }
+        }
+        return result;
+    }
+
+    public void exceptionRaised(String title,String body) {
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage(body)
+                .setTitle(title);
+        builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent i = getBaseContext().getPackageManager()
+                        .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(i);
+            }
+        });
+        builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setCancelable(false);
+        dialog.show();
+    }
 
     public void exceptionRaised() {
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
@@ -183,6 +254,16 @@ public class MainScreenActivity extends AppCompatActivity { //AppCompatActivity
             }
         });
         AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void load(){
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage("Please wait while the data loads...")
+                .setTitle("Loading");
+        dialog = builder.create();
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setCancelable(false);
         dialog.show();
     }
 

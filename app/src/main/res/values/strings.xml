@@ -2,9 +2,9 @@
 <resources>
     <string name="app_name">Signal Tracking System</string>
     <string name="heading">Welcome To Fog Signal</string>
-    <string name="hint">Search Trains… </string>
-    <string name="hint2">Search Train Numbers… </string>
-    <string name="hint3">Search Track Names…</string>
+    <string name="hint">Train Names… </string>
+    <string name="hint2">Train Numbers… </string>
+    <string name="hint3">Track Names…</string>
     <string name="mainhint">Enter Train Name or Number and Press Enter</string>
     <string name="firsthelp">Enter Train Name</string>
     <string name="secondhelp">Enter Train Number</string>

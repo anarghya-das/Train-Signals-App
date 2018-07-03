@@ -12,12 +12,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 
 public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
+    private AsyncResponse response;
     private BackEnd b;
     @SuppressLint("StaticFieldLeak")
     private MainActivity gp;
@@ -28,11 +30,12 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
     private static final int CONNECTION_TIMEOUT = 15000;
 
 
-    RequestTask(BackEnd b, MainActivity gp, ThreadControl t, String param){
+    RequestTask(BackEnd b, MainActivity gp, ThreadControl t, String param,AsyncResponse response){
         this.b=b;
         this.gp=gp;
         thread=t;
         this.param=param;
+        this.response=response;
     }
 
     @Override
@@ -60,11 +63,11 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     }
                     if (uri[0].equals("")){
                         String s2="";
-                        boolean b=gp.checkCurrentLocation();
-                        Log.d("signals",Boolean.toString(b));
-                        if (b){
-                            s2=post(uri[2],gp.jsonPost("active"));
-                        }
+                        gp.checkCurrentLocation();
+//                        Log.d("signals",Boolean.toString(b));
+//                        if (b){
+//                            s2=post(uri[2],gp.jsonPost("active"));
+//                        }
                         String s = post(uri[1],"asd");
                         a.add(s);
                         a.add(s2);
@@ -82,27 +85,39 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
     protected void onPostExecute(ArrayList<String> result) {
         Log.d("key", "Request Task onPostExecute: ");
         if (result==null){
-            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
+            response.processFinish("null");
+//            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
         }else {
             if (result.size() == 2) {
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
-                Train t = b.getTrainFromName(param, b.jsonGov(result.get(1)));
-                gp.populateMarkers(h);
-                gp.addSignalToMap(t.getSignals());
-                gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
+                ArrayList<Train> ts=b.jsonGov(result.get(1));
+                if (ts!=null&&h!=null) {
+                    Train t = b.getTrainFromName(param, ts);
+                    gp.populateMarkers(h);
+                    gp.addSignalToMap(t.getSignals());
+                    gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
+                }else {
+                    response.processFinish("null");
+                }
             }
             if (result.size() == 3) {
                 if (!result.get(0).equals("")) {
-                    Train t = b.getTrainFromName(param, b.jsonGov(result.get(0)));
-                    if (t!=null){
-                        Log.d("list", "RUN");
-                        gp.updateSignalMap(t.getSignals());
+                    ArrayList<Train> ts=b.jsonGov(result.get(0));
+                    if (ts!=null) {
+                        Train t = b.getTrainFromName(param, ts);
+                        if (t != null) {
+                            Log.d("list", "RUN");
+                            gp.updateSignalMap(t.getSignals());
+                        }
+                    }
+                    else{
+                        response.processFinish("null");
                     }
                 }
-                if (!result.get(1).equals("")){
-                    Log.d("result", result.get(1));
-//                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
-                }
+//                if (!result.get(1).equals("")){
+//                    Log.d("result", result.get(1));
+////                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
+//                }
             }
         }
     }
@@ -123,6 +138,8 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
 
             // Create the urlConnection
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setReadTimeout(READ_TIMEOUT);
+            urlConnection.setConnectTimeout(CONNECTION_TIMEOUT);
 
 
             urlConnection.setDoInput(true);

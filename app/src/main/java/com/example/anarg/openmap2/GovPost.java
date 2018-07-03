@@ -2,6 +2,7 @@ package com.example.anarg.openmap2;
 
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
+import android.os.Parcelable;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -13,19 +14,21 @@ import java.net.URL;
 import java.util.ArrayList;
 
 public class GovPost extends AsyncTask<String,Void,String> {
+    private AsyncResponse response;
     private String train;
     private BackEnd backEnd;
     @SuppressLint("StaticFieldLeak")
     private SignalActivity signalActivity;
     private ThreadControl threadControl;
-    private ArrayList<Signal> collection;
+    private final int CONN_WAIT_TIME = 5000;
+    private final int CONN_DATA_WAIT_TIME = 2000;
 
-    GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl){
+    GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl,AsyncResponse response){
         backEnd=new BackEnd();
         train=s;
         this.signalActivity=signalActivity;
         this.threadControl=threadControl;
-        collection=new ArrayList<>();
+        this.response=response;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class GovPost extends AsyncTask<String,Void,String> {
             if (threadControl.isCancelled()) {
                 break;
             }
-            post(strings[1],strings[2]);
+//            post(strings[1],strings[2]);
             s=post(strings[0], "sdsd");
             t=false;
         }
@@ -52,12 +55,18 @@ public class GovPost extends AsyncTask<String,Void,String> {
     @Override
     protected void onPostExecute(String s) {
         if (s!=null){
-            Train t=backEnd.getTrainFromName(train,backEnd.jsonGov(s));
-            if (t!=null&&t.getSignals().size()!=0) {
-                Log.d("result", t.getSignals().toString());
-                Log.d("result", "CHANGE");
-                    signalActivity.createSignal(t.getSignals(),t);
+            ArrayList<Train> ts=backEnd.jsonGov(s);
+            if (ts!=null) {
+                Train t = backEnd.getTrainFromName(train, ts);
+                if (t != null && t.getSignals().size() != 0) {
+                    Log.d("result", t.getSignals().toString());
+                    signalActivity.createSignal(t.getSignals(), t);
+                }
+            }else{
+                response.processFinish("null");
             }
+        }else{
+            response.processFinish("null");
         }
     }
 
@@ -68,6 +77,8 @@ public class GovPost extends AsyncTask<String,Void,String> {
 
         // Create the urlConnection
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        urlConnection.setConnectTimeout(CONN_WAIT_TIME);
+        urlConnection.setReadTimeout(CONN_DATA_WAIT_TIME);
 
 
         urlConnection.setDoInput(true);
