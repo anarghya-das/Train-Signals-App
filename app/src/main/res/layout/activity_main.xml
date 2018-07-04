@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:keepScreenOn="true"
     android:orientation="vertical">
 
     <org.osmdroid.views.MapView
-    android:id="@+id/map"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/floatingActionButton2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
@@ -22,6 +24,23 @@
         app:backgroundTint="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <SeekBar
+        android:id="@+id/repeatBar"
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="92dp"
+        android:layout_marginLeft="204dp"
+        android:layout_marginStart="204dp"
+        android:layout_marginTop="8dp"
+        android:max="30"
+        android:rotation="270"
+        android:scrollbarSize="20dp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/repeatButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton2"
+        app:layout_constraintVertical_bias="1.0" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/soundButton"
@@ -51,7 +70,7 @@
         android:fontFamily="sans-serif"
         android:gravity="center"
         android:onClick="changeLanguage"
-        android:text="HINDI"
+        android:text="Bengali"
         android:textColor="@android:color/white"
         android:textSize="12sp"
         android:textStyle="bold"
@@ -69,5 +88,18 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:menu="@menu/navigation" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/repeatButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginRight="32dp"
+        android:onClick="repeatButtonHandler"
+        android:src="@drawable/repeat"
+        app:backgroundTint="@android:color/white"
+        app:layout_constraintBottom_toTopOf="@+id/soundButton"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

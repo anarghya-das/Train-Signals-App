@@ -20,8 +20,8 @@ public class GovPost extends AsyncTask<String,Void,String> {
     @SuppressLint("StaticFieldLeak")
     private SignalActivity signalActivity;
     private ThreadControl threadControl;
-    private final int CONN_WAIT_TIME = 5000;
-    private final int CONN_DATA_WAIT_TIME = 2000;
+    private final int CONN_WAIT_TIME = 15000;
+    private final int CONN_DATA_WAIT_TIME = 15000;
 
     GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl,AsyncResponse response){
         backEnd=new BackEnd();
@@ -61,6 +61,7 @@ public class GovPost extends AsyncTask<String,Void,String> {
                 if (t != null && t.getSignals().size() != 0) {
                     Log.d("result", t.getSignals().toString());
                     signalActivity.createSignal(t.getSignals(), t);
+                    response.processFinish("okay");
                 }
             }else{
                 response.processFinish("null");

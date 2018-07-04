@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:fillViewport="true"
@@ -207,12 +208,46 @@
         android:fontFamily="sans-serif"
         android:gravity="center"
         android:onClick="changeLanguage"
-        android:text="HINDI"
+        android:text="Bengali"
         android:textColor="@android:color/white"
-        android:textSize="15sp"
+        android:textSize="12sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <SeekBar
+        android:id="@+id/repeatBar"
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="104dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:max="30"
+        android:rotation="270"
+        android:scrollbarSize="20dp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/navigation"
+        app:layout_constraintEnd_toStartOf="@+id/sig3"
+        app:layout_constraintHorizontal_bias="0.538"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
+        app:layout_constraintVertical_bias="0.848" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/repeatButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:layout_marginLeft="44dp"
+        android:layout_marginStart="44dp"
+        android:src="@drawable/repeat"
+        android:onClick="repeatButtonHandler"
+        app:backgroundTint="@android:color/white"
+        app:layout_constraintBottom_toTopOf="@+id/navigation"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <android.support.design.widget.BottomNavigationView
         android:id="@+id/navigation"

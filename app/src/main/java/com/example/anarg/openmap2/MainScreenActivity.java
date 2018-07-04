@@ -48,12 +48,14 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     private String android_id;
     private ArrayList<Train> trains;
     private AlertDialog dialog;
+    private boolean restart;
 
     @SuppressLint({"HardwareIds", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_screen);
+        restart=false;
         if (getIntent().getBooleanExtra("Exit", false))
         {
             finish();
@@ -83,8 +85,25 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (restart&&dialog!=null){
+            this.recreate();
+            restart=false;
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        restart=true;
+    }
+
+    @Override
     public void processFinish(String output) {
-        dialog.hide();
+        if (dialog.isShowing()) {
+            dialog.dismiss();
+        }
         if (output.equals("null")){
             exceptionRaised("Server Problem","Cannot connect to the Server.Please try again Later.");
 

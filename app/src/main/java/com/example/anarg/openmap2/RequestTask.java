@@ -92,6 +92,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 ArrayList<Train> ts=b.jsonGov(result.get(1));
                 if (ts!=null&&h!=null) {
+                    response.processFinish("okay");
                     Train t = b.getTrainFromName(param, ts);
                     gp.populateMarkers(h);
                     gp.addSignalToMap(t.getSignals());
@@ -102,6 +103,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             }
             if (result.size() == 3) {
                 if (!result.get(0).equals("")) {
+                    response.processFinish("okay");
                     ArrayList<Train> ts=b.jsonGov(result.get(0));
                     if (ts!=null) {
                         Train t = b.getTrainFromName(param, ts);

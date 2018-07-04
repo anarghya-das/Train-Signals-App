@@ -26,6 +26,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.eclipsesource.json.JsonObject;
@@ -40,6 +41,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
 
 
 public class MainActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
@@ -62,10 +64,17 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
-            speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
-            speech_yellowyellow_hi;
-    private boolean mediaPause,firstChange;
+        speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
+        speech_yellowyellow_hi,speech_green_b,speech_red_b,speech_yellow_b,speech_yellowyellow_b;
+    private boolean mediaPause,firstChange,repeat,error;
+    private int repeatFrequency,changeFrequnecy,errorFrequency;
+    private RepeatTimer repeatTimer;
+    private Signal currentSignal;
+    private SeekBar seekBar;
+    private FloatingActionButton repeatButton,audioButton;
+    private Timer timer;
     private TextView b;
+    private AlertDialog dialog;
     private boolean locationPermission;
     private ArrayList<RequestTask> g;
 
@@ -79,6 +88,13 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         locationPermission=false;
         mediaPause=false;
         firstChange=false;
+        repeat=true;
+        error=false;
+        errorFrequency=0;
+        changeFrequnecy=10;
+        repeatFrequency=10;
+        currentSignal=null;
+        repeatTimer=new RepeatTimer();
         allMarkers = new ArrayList<>();
         signalMarker=new HashMap<>();
         g=new ArrayList<>();
@@ -99,6 +115,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 am.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
                 0);
         b=findViewById(R.id.langButton);
+        audioButton= findViewById(R.id.soundButton);
+        seekBar=findViewById(R.id.repeatBar);
+        seekBar.setMax(30);
+        seekBar.setProgress(repeatFrequency);
+        seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
+        repeatButton=findViewById(R.id.repeatButton);
         backend = new BackEnd();
         threadControl = new ThreadControl();
         SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
@@ -113,6 +135,10 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         speech_red_hi=MediaPlayer.create(this,R.raw.red_hi);
         speech_yellow_hi=MediaPlayer.create(this,R.raw.yellow_hi);
         speech_yellowyellow_hi=MediaPlayer.create(this,R.raw.yellowyellow_hi);
+        speech_green_b=MediaPlayer.create(this,R.raw.green_b);
+        speech_red_b=MediaPlayer.create(this,R.raw.red_b);
+        speech_yellow_b=MediaPlayer.create(this,R.raw.yellow_b);
+        speech_yellowyellow_b=MediaPlayer.create(this,R.raw.yellowyellow_b);
         Intent i = getIntent();
         trainName = i.getStringExtra("Signal");
         trainNo = i.getIntExtra("TrainNumber",0);
@@ -139,12 +165,59 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 
     @Override
     public void processFinish(String output) {
-        if (output.equals("null")){
-            threadControl.pause();
-            mHandler.removeCallbacks(timerTask);
-            exceptionRaised("Connection Error","There was a problem connecting to the Server.\nPlease try again later.");
+        if (output.equals("null")) {
+            if (dialog == null) {
+                if (!mediaPause) {
+                    mediaPause = true;
+                }
+                error=true;
+                exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
+                        "\nIn the mean while check if your internet connection is working.", false);
+            } else if (!dialog.isShowing()) {
+                if (!mediaPause) {
+                    mediaPause = true;
+                }
+                error=true;
+                exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
+                        "\nIn the mean while check if your internet connection is working.", false);
+            }else if (errorFrequency==60000){
+                dialog.dismiss();
+                exceptionRaised("Connection Error", "Could not reconnect." +
+                        "\nThere might be some problem, please try again later!", true);
+            }
+        }else if (dialog!=null&&dialog.isShowing()&&output.equals("okay")){
+            error=false;
+            errorFrequency=0;
+            dialog.dismiss();
+            if (audioButton.getTag().equals("noaudio")) {
+                mediaPause = true;
+            }else if (audioButton.getTag().equals("audio")){
+                mediaPause=false;
+            }
         }
     }
+
+    private SeekBar.OnSeekBarChangeListener seekBarChangeListener= new SeekBar.OnSeekBarChangeListener() {
+
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            changeFrequnecy=progress;
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            Toast.makeText(MainActivity.this,"Current Repetition Frequency: "+repeatFrequency+" seconds",Toast.LENGTH_SHORT).show();
+            repeat = repeatFrequency != 0;
+            seekBar.setVisibility(View.INVISIBLE);
+            repeatButton.setVisibility(View.VISIBLE);
+        }
+    };
+
 
     public MapView getMap() { return map; }
 
@@ -208,12 +281,15 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     requestTask.execute("", govURl);// backEndServer
                     g.add(requestTask);
                 }
+                if (error){
+                    errorFrequency++;
+                }
                 mHandler.postDelayed(timerTask, 1);
             }};
 
     public void setMapCenter(GeoPoint g){
         mapController = map.getController();
-        mapController.setZoom(15.6f);
+        mapController.setZoom(18.6f);
 //        GeoPoint g=new GeoPoint(22.578802, 88.365743);
         mapController.setCenter(g);
     }
@@ -258,6 +334,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     public void onResume() {
         super.onResume();
         mHandler.post(timerTask);
+        mediaPause=false;
         threadControl.resume();
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
@@ -271,6 +348,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     public void onPause() {
         super.onPause();
         threadControl.pause();
+        mediaPause=true;
         mHandler.removeCallbacks(timerTask);
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
@@ -280,6 +358,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
         }
     }
+
     private void endAllSounds() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
@@ -308,6 +387,18 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         if (speech_yellowyellow_hi.isPlaying()) {
             speech_yellowyellow_hi.stop();
         }
+        if (speech_green_b.isPlaying()){
+            speech_green_b.stop();
+        }
+        if (speech_red_b.isPlaying()){
+            speech_red_b.stop();
+        }
+        if (speech_yellowyellow_b.isPlaying()){
+            speech_yellowyellow_b.stop();
+        }
+        if (speech_yellow_b.isPlaying()){
+            speech_yellow_b.stop();
+        }
     }
 
     @Override
@@ -320,9 +411,26 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     protected void onDestroy() {
         super.onDestroy();
         endAllSounds();
+        if (repeatTimer.isRunning()) {
+            timer.cancel();
+        }
         for (RequestTask go: g) {
             go.cancel(true);
             threadControl.cancel();
+        }
+    }
+    private void repeatChecks(){
+        if (repeatTimer.isRunning()) {
+            if (changeFrequnecy == 0) {
+                repeatFrequency=changeFrequnecy;
+                timer.cancel();
+            }if (repeatFrequency!=changeFrequnecy){
+                repeatFrequency=changeFrequnecy;
+                timer.cancel();
+                timer=new Timer();
+                repeatTimer=new RepeatTimer(currentSignal,this);
+                timer.scheduleAtFixedRate(repeatTimer,0,repeatFrequency*1000);
+            }
         }
     }
 
@@ -389,11 +497,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     public void updateSignalMap(ArrayList<Signal> s){
         boolean change=false;
         firstChange=false;
+        repeatChecks();
         if (s.size()!=0) {
             for (Signal si : s) {
                 Signal fromHash = fromIndex(si.getIndex());
                 if (fromHash != null && checkSignalWithMarker(si) != null) {
-                    if (!fromHash.getSignalID().equals(si.getSignalID())) {
+                    if (!fromHash.getSignalAspect().equals(si.getSignalAspect())) {
                         if (si.getIndex()==1){
                             firstChange=true;
                         }
@@ -418,7 +527,22 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         for (Signal s: m.keySet()){
             if (s.getIndex()==1&&firstChange&&!mediaPause){
                 mediaPlayer.start();
-                playSpeech(s,audioLanguage);
+                playSpeech(s);
+                //Repeat comes here same as Signal Activity
+                if (repeat) {
+                    if (!repeatTimer.isRunning()) {
+                        currentSignal=s;
+                        repeatTimer = new RepeatTimer(s, this);
+                        timer = new Timer();
+                        timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
+                    } else if (repeatTimer.isRunning()) {
+                        currentSignal=s;
+                        timer.cancel();
+                        timer = new Timer();
+                        repeatTimer = new RepeatTimer(s, this);
+                        timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
+                    }
+                }
             }
             addColorSignal(s,m.get(s));
             addMarker(m.get(s));
@@ -440,36 +564,56 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     }
     //close
 
-    private void playSpeech(Signal s,String so) {
-        if (so.equals("Hindi")) {
-            switch (s.getSignalAspect()) {
-                case "Red":
-                    speech_red_hi.start();
+    public void playSpeech(Signal s) {
+        if (!mediaPause) {
+            switch (audioLanguage) {
+                case "Hindi":
+                    switch (s.getSignalAspect()) {
+                        case "Red":
+                            speech_red_hi.start();
+                            break;
+                        case "Green":
+                            speech_green_hi.start();
+                            break;
+                        case "Yellow":
+                            speech_yellow_hi.start();
+                            break;
+                        case "YellowYellow":
+                            speech_yellowyellow_hi.start();
+                            break;
+                    }
                     break;
-                case "Green":
-                    speech_green_hi.start();
+                case "English":
+                    switch (s.getSignalAspect()) {
+                        case "Red":
+                            speech_red_en.start();
+                            break;
+                        case "Green":
+                            speech_green_en.start();
+                            break;
+                        case "Yellow":
+                            speech_yellow_en.start();
+                            break;
+                        case "YellowYellow":
+                            speech_yellowyellow_en.start();
+                            break;
+                    }
                     break;
-                case "Yellow":
-                    speech_yellow_hi.start();
-                    break;
-                case "YellowYellow":
-                    speech_yellowyellow_hi.start();
-                    break;
-            }
-        }
-        else if (so.equals("English")){
-            switch (s.getSignalAspect()) {
-                case "Red":
-                    speech_red_en.start();
-                    break;
-                case "Green":
-                    speech_green_en.start();
-                    break;
-                case "Yellow":
-                    speech_yellow_en.start();
-                    break;
-                case "YellowYellow":
-                    speech_yellowyellow_en.start();
+                case "Bengali":
+                    switch (s.getSignalAspect()) {
+                        case "Red":
+                            speech_red_b.start();
+                            break;
+                        case "Green":
+                            speech_green_b.start();
+                            break;
+                        case "Yellow":
+                            speech_yellow_b.start();
+                            break;
+                        case "YellowYellow":
+                            speech_yellowyellow_b.start();
+                            break;
+                    }
                     break;
             }
         }
@@ -538,13 +682,18 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     public void changeLanguage(View view) {
         SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
         SharedPreferences.Editor editor=preferences.edit();
-        if (b.getText().equals("Hindi")){
+        if (b.getText().equals("Bengali")){
+            audioLanguage="Hindi";
+            b.setText(audioLanguage);
+            editor.putString("audio",audioLanguage);
+            editor.apply();
+        }else if (b.getText().equals("Hindi")){
             audioLanguage="English";
             b.setText(audioLanguage);
             editor.putString("audio",audioLanguage);
             editor.apply();
         }else if (b.getText().equals("English")){
-            audioLanguage="Hindi";
+            audioLanguage="Bengali";
             b.setText(audioLanguage);
             editor.putString("audio",audioLanguage);
             editor.apply();
@@ -552,43 +701,49 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     }
 
     public void soundChange(View view) {
-        FloatingActionButton button= findViewById(R.id.soundButton);
-        if (button.getTag().equals("audio")){
+        if (audioButton.getTag().equals("audio")){
             mediaPause=true;
-            button.setTag("noaudio");
-            button.setImageResource(R.drawable.noaudio);
-        }else if (button.getTag().equals("noaudio")){
+            audioButton.setTag("noaudio");
+            audioButton.setImageResource(R.drawable.noaudio);
+        }else if (audioButton.getTag().equals("noaudio")){
             mediaPause=false;
-            button.setTag("audio");
-            button.setImageResource(R.drawable.audio);
+            audioButton.setTag("audio");
+            audioButton.setImageResource(R.drawable.audio);
         }
     }
 
-    public void exceptionRaised(String title,String body) {
+    public void exceptionRaised(String title,String body,boolean buttons) {
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
         builder.setMessage(body)
                 .setTitle(title);
-        builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finish();
-                Intent i=getIntent();
-                startActivity(i);
-            }
-        });
-        builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Intent i=new Intent(MainActivity.this,MainScreenActivity.class);
-                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                i.putExtra("Exit",true);
-                startActivity(i);
-            }
-        });
-        AlertDialog dialog = builder.create();
+        if (buttons) {
+            builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                    Intent i = getIntent();
+                    startActivity(i);
+                }
+            });
+            builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent i = new Intent(MainActivity.this, MainScreenActivity.class);
+                    i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    i.putExtra("Exit", true);
+                    startActivity(i);
+                }
+            });
+        }
+        dialog = builder.create();
         dialog.setCanceledOnTouchOutside(false);
         dialog.setCancelable(false);
         dialog.show();
     }
 
+    public void repeatButtonHandler(View view) {
+        seekBar.setVisibility(View.VISIBLE);
+        repeatButton=findViewById(R.id.repeatButton);
+        repeatButton.setVisibility(View.INVISIBLE);
+    }
 }

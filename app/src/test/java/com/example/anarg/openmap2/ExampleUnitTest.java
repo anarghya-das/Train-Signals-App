@@ -29,7 +29,7 @@ public class ExampleUnitTest {
         String s=postagain(govURl,"sf");
         ArrayList<Train> t=b.jsonGov(s);
         Train to=b.getTrainFromName("Howrah-Bandel Local",t);
-        System.out.println(s);
+        System.out.println(t);
 //        System.out.println(to);
 //        ArrayList<Train> ts=new ArrayList<>();
 //        System.out.println(ts.size());
