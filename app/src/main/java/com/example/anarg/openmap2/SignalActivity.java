@@ -56,6 +56,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private Signal currentSignal,currentSignal2,currentSignal3;
     private FloatingActionButton audioButton,repeatButton;
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     @Override
@@ -257,7 +258,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                 img3.setImageResource(getColor(null));
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
                         "\nIn the mean while check if your internet connection is working.", false);
-            }else if (errorFrequency==60000){
+            }else if (errorFrequency==TIMEOUT_ERROR_TIME){
                 dialog.dismiss();
                 exceptionRaised("Connection Error", "Could not reconnect." +
                         "\nThere might be some problem, please try again later!", true);

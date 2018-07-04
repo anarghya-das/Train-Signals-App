@@ -15,8 +15,8 @@ import java.util.ArrayList;
 public class RequestTaskPost extends AsyncTask<String,String,String> {
     private AsyncResponse delegate;
     private BackEnd backEnd;
-    private final int CONN_WAIT_TIME = 15000;
-    private final int CONN_DATA_WAIT_TIME = 15000;
+    private final int CONN_WAIT_TIME = 30000;
+    private final int CONN_DATA_WAIT_TIME = 30000;
     @SuppressLint("StaticFieldLeak")
     MainScreenActivity m;
 

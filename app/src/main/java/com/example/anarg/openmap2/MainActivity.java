@@ -225,7 +225,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         Menu menu= navigation.getMenu();
-        MenuItem menuItem= menu.getItem(2);
+        MenuItem menuItem= menu.getItem(1);
         menuItem.setChecked(true);
     }
 
@@ -242,8 +242,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
-                case R.id.home:
-                    break;
                 case R.id.map_view:
                     break;
                 case R.id.signal_view:

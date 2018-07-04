@@ -26,8 +26,8 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
     private ThreadControl thread;
     private String param;
     private static final String REQUEST_METHOD = "GET";
-    private static final int READ_TIMEOUT = 15000;
-    private static final int CONNECTION_TIMEOUT = 15000;
+    private static final int READ_TIMEOUT = 30000;
+    private static final int CONNECTION_TIMEOUT = 30000;
 
 
     RequestTask(BackEnd b, MainActivity gp, ThreadControl t, String param,AsyncResponse response){

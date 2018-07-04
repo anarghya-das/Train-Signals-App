@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Signal Tracking System</string>
+    <string name="app_name">Fog Signal</string>
     <string name="heading">Welcome To Fog Signal</string>
     <string name="hint">Train Names… </string>
     <string name="hint2">Train Numbers… </string>
