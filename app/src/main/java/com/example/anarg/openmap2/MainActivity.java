@@ -77,8 +77,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private RequestTask requestTask;
     private double user_Lat,user_Long;
     //Stores the URL of the server from where the coordinates of signals are received
-    private static final String reqURl = "http://14.139.219.37/railway/jsonrender.php";
-//    private static final String reqURl = "https://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
+//    private static final String reqURl = "http://14.139.219.37/railway/jsonrender.php";
+    private static final String reqURl = "https://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     //Stores the URL of the government server from where the train data is fetched
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
