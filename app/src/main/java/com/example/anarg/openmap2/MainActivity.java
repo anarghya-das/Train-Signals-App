@@ -22,6 +22,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -76,7 +77,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private RequestTask requestTask;
     private double user_Lat,user_Long;
     //Stores the URL of the server from where the coordinates of signals are received
-    private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
+    private static final String reqURl = "http://14.139.219.37/railway/jsonrender.php";
+//    private static final String reqURl = "https://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
     //Stores the URL of the government server from where the train data is fetched
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
@@ -246,6 +248,18 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             }else if (audioButton.getTag().equals("audio")){
                 mediaPause=false;
             }
+        }else if (output.equals("null1")){
+            if (dialog == null) {
+                exceptionRaised("Connection Error1", "Please wait while we try to reconnect.",false);
+                requestTask = new RequestTask(backend, this, threadControl, trainName,this);
+                requestTask.execute(reqURl, govURl);
+            }else if (!dialog.isShowing()){
+                exceptionRaised("Connection Error1", "Please wait while we try to reconnect.",false);
+                requestTask = new RequestTask(backend, this, threadControl, trainName,this);
+                requestTask.execute(reqURl, govURl);
+            }
+        }else if (output.equals("okay1")){
+            mHandler.post(timerTask);
         }
     }
     /**
@@ -420,9 +434,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 
     public void onResume() {
         super.onResume();
-        mHandler.post(timerTask);
-        mediaPause=false;
-        threadControl.resume();
+        mediaPause = false;
+        if (requestTask.getStatus().equals(AsyncTask.Status.FINISHED)) {
+            mHandler.post(timerTask);
+            threadControl.resume();
+        }
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);

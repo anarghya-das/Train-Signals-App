@@ -153,8 +153,14 @@ public class BackEnd {
                 JsonObject arrayObject = jsonArray.get(i).asObject();
                 String signalId = arrayObject.get("signalId").asString();
                 JsonObject coo = arrayObject.get("coordinate").asObject();
-                double latitude = coo.get("latitude").asDouble();
-                double longitude = coo.get("longitude").asDouble();
+                double latitude=0,longitude=0;
+                if (coo.get("latitude").isNumber()&&coo.get("longitude").isNumber()){
+                    latitude=coo.get("latitude").asDouble();
+                    longitude=coo.get("longitude").asDouble();
+                }else if (coo.get("latitude").isString()&&coo.get("longitude").isString()) {
+                    latitude = Double.parseDouble(coo.get("latitude").asString());
+                    longitude = Double.parseDouble(coo.get("longitude").asString());
+                }
                 GeoPoint gp = new GeoPoint(latitude, longitude);
                 m.put(signalId, gp);
             }

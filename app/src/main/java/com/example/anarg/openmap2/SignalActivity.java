@@ -229,7 +229,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     i.putExtra("Phone",phone);
                     i.putExtra("id",android_id);
                     i.putExtra("sound",mediaPause);
-                    mediaPause=true;
+                    endAllSounds();
                     threadControl.pause();
                     mHandler.removeCallbacks(timerTask);
                     SignalActivity.this.startActivity(i);

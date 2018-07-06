@@ -97,6 +97,13 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     t = false;
                 }
                 return a;
+            }catch (IOException e){
+                a.add("null");
+                if (e.getMessage().equals("GET")) {
+                    return a;
+                }else{
+                    return null;
+                }
             } catch (Exception e) {
                 return null;
             }
@@ -111,19 +118,19 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
         if (result==null){
             response.processFinish("null");
 //            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
-        }else {
+        }else if (result.size()==1){
+            response.processFinish("null1");
+        } else {
             if (result.size() == 2) {
                 gp.setMapCenterOnLocation();
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 ArrayList<Train> ts=b.jsonGov(result.get(1));
-                if (ts!=null&&h!=null) {
-                    response.processFinish("okay");
+                if (ts!=null) {
+                    response.processFinish("okay1");
                     Train t = b.getTrainFromName(param, ts);
                     gp.populateMarkers(h);
                     gp.addSignalToMap(t.getSignals());
                     gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
-                }else {
-                    response.processFinish("null");
                 }
             }
             if (result.size() == 3) {
@@ -234,7 +241,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
      * @return response
      * @throws IOException throws an exception if not executed properly
      */
-    private String get(String url) throws IOException {
+    private String get(String url) throws IOException{
         String result;
         String inputLine;
             //Create a URL object holding our url
@@ -266,7 +273,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             result = stringBuilder.toString();
 
             if (result.isEmpty()){
-                throw new IOException();
+                throw new IOException("GET");
             }
 
         return result;
