@@ -43,41 +43,74 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
 
-
+/**
+ * This class controls the map view of the signals plotted on their respective geo locations.
+ * @author Anarghya Das
+ */
 public class MainActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
+    //Request integer for runtime location request
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+    //Mapview which stores the map to be displayed
     private MapView map = null;
+    //Map controller
     private IMapController mapController;
+    //Stores the current location overlay of the user
     private MyLocationNewOverlay myLocationoverlay;
+    //Reference to the backend class
     private BackEnd backend;
+    //Stores all the markers on the map
     private ArrayList<Marker> allMarkers;
+    //Stores the current signals with their corresponding Markers
     private HashMap<Signal,Marker> signalMarker;
+    //Reference to the threadControl class
     private ThreadControl threadControl;
+    //Stores the user information
     private String trainName,trackName;
     private int trainNo;
     private long phone;
+    //Stores the android ID and the current audio language
     private String android_id,audioLanguage;
+    //Stores the current location coordinates of the user
     private IGeoPoint myLocation;
+    //Reference to the Request Task async Task
     private RequestTask requestTask;
     private double user_Lat,user_Long;
+    //Stores the URL of the server from where the coordinates of signals are received
     private static final String reqURl = "http://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
+    //Stores the URL of the government server from where the train data is fetched
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
+
+    //Stores the media references of the different languages the audio is in
     private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
         speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
         speech_yellowyellow_hi,speech_green_b,speech_red_b,speech_yellow_b,speech_yellowyellow_b;
+    //Stores the pausable, error, repeat and change conditions
     private boolean mediaPause,firstChange,repeat,error;
+    //Stores the change, repeat and error Frequencies
     private int repeatFrequency,changeFrequnecy,errorFrequency;
+    //Stores the repeat timer reference which repeats the audio
     private RepeatTimer repeatTimer;
+    //Stores the current signal
     private Signal currentSignal;
+    //Store the seekBar reference
     private SeekBar seekBar;
+    //Stores the repeat and pause button reference
     private FloatingActionButton repeatButton,audioButton;
+    //Controls the timer
     private Timer timer;
+    //Stores the changing language text view reference.
     private TextView b;
+    //Stores the alert dialog reference
     private AlertDialog dialog;
+    //Stores whether the current location permission is enabled or not
     private boolean locationPermission;
+    //Stores all the currently running async Tasks
     private ArrayList<RequestTask> g;
-
+    /**
+     * Initialises all the above instance variables
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         // Write you code here if permission already given.
         //load/initialize the osmdroid configuration, this can be done
         locationPermission=false;
-        mediaPause=false;
         firstChange=false;
         repeat=true;
         error=false;
@@ -145,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         trackName = i.getStringExtra("TrackName");
         phone = i.getLongExtra("Phone", 0);
         android_id = i.getStringExtra("id");
+        mediaPause=i.getBooleanExtra("sound",false);
         requestTask = new RequestTask(backend, this, threadControl, trainName,this);
         requestTask.execute(reqURl, govURl);
 //        setMapCenter();
@@ -162,7 +195,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 //            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
         }
     }
-
+    /**
+     * This method runs after the async task is complete and executes proper functions based on the
+     * result received.
+     * @param output Stores the result of the async task after completion.
+     */
     @Override
     public void processFinish(String output) {
         if (output.equals("null")) {
@@ -171,11 +208,21 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     mediaPause = true;
                 }
                 error=true;
+                for (Marker m: signalMarker.values()){
+                    removeMarker(m);
+                    addColorSignal(null,m);
+                    addMarker(m);
+                }
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
                         "\nIn the mean while check if your internet connection is working.", false);
             } else if (!dialog.isShowing()) {
                 if (!mediaPause) {
                     mediaPause = true;
+                }
+                for (Marker m: signalMarker.values()){
+                    removeMarker(m);
+                    addColorSignal(null,m);
+                    addMarker(m);
                 }
                 error=true;
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
@@ -189,6 +236,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             error=false;
             errorFrequency=0;
             dialog.dismiss();
+            for (Signal s: signalMarker.keySet()){
+                removeMarker(signalMarker.get(s));
+                addColorSignal(s,signalMarker.get(s));
+                addMarker(signalMarker.get(s));
+            }
             if (audioButton.getTag().equals("noaudio")) {
                 mediaPause = true;
             }else if (audioButton.getTag().equals("audio")){
@@ -196,7 +248,10 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             }
         }
     }
-
+    /**
+     * onSeekBarChangeListener gets the changed output from the seek bar and does relevant job according
+     * to the output.
+     */
     private SeekBar.OnSeekBarChangeListener seekBarChangeListener= new SeekBar.OnSeekBarChangeListener() {
 
         @Override
@@ -211,16 +266,20 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            Toast.makeText(MainActivity.this,"Current Repetition Frequency: "+repeatFrequency+" seconds",Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this,"Current Repetition Frequency: "+changeFrequnecy+" seconds",Toast.LENGTH_SHORT).show();
             repeat = repeatFrequency != 0;
             seekBar.setVisibility(View.INVISIBLE);
             repeatButton.setVisibility(View.VISIBLE);
         }
     };
-
-
+    /**
+     * Getter which returns the reference to the current map
+     */
     public MapView getMap() { return map; }
 
+    /**
+     * Creates the bottom navigation bar
+     */
     public void createBottomBar(){
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
@@ -229,13 +288,18 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         menuItem.setChecked(true);
     }
 
+    /**
+     * Creates and initializes the the map from the OpenStreetMap tile source
+     */
     public void createMap(){
         map = findViewById(R.id.map);
         map.setTileSource(TileSourceFactory.MAPNIK);
         map.setBuiltInZoomControls(false);
         map.setMultiTouchControls(true);
     }
-
+    /**
+     * Controls the onClick actions of the bottom navigation bar
+     */
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -251,7 +315,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             return false;
         }
     };
-
+    /**
+     * Creates a json object of all the user inputs along with android device ID to send it to the
+     * server
+     * @return The json string to be sent to the server
+     */
     public String jsonPost(String status){
         JsonObject o=new JsonObject();
         o.add("deviceId",android_id);
@@ -269,7 +337,10 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 //        Log.d("worksend", o.toString());
         return o.toString();
     }
-
+    /**
+     * Handler which creates a new async Task every second to fetch the data from the server and do
+     * the relevant job after receiving the data.
+     */
         private Handler mHandler = new Handler();
         private Runnable timerTask = new Runnable() {
             @Override
@@ -284,17 +355,32 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 }
                 mHandler.postDelayed(timerTask, 1);
             }};
-
+        /**
+         * Sets the map camera to the first signal marker when the map initializes
+         */
     public void setMapCenter(GeoPoint g){
         mapController = map.getController();
         mapController.setZoom(18.6f);
+        if (g!=null) {
 //        GeoPoint g=new GeoPoint(22.578802, 88.365743);
-        mapController.setCenter(g);
+            mapController.setCenter(g);
+        }
     }
 
+    /**
+     * Sets the map camera to the current user location when map is initialized
+     */
+    public void setMapCenterOnLocation(){
+        mapController = map.getController();
+        mapController.setZoom(18.6f);
+        mapController.setCenter(myLocation);
+    }
 
-
-
+    /**
+     * Checks whether the location permission is enabled or not and stores the user coordinates if
+     * it is enabled.
+     * @return true if user coordinate stored or false otherwise
+     */
     public boolean checkCurrentLocation() {
 
         if (!locationPermission) {
@@ -313,6 +399,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         }
     }
 
+    /**
+     *Switches the camera to the focus on the current user location.
+     */
     private void locationToast(){
         if (!locationPermission) {
             Toast.makeText(this, "Enable Location permission to Use this!", Toast.LENGTH_SHORT).show();
@@ -356,7 +445,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
         }
     }
-
+    /**
+     * Stops all the sound media currently playing in the background
+     */
     private void endAllSounds() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
@@ -404,7 +495,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         super.onStop();
 //        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
     }
-
+    /**
+     * Stops all the sound media playing currently and removes all the aysnc tasks running in the memory
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -417,21 +510,33 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             threadControl.cancel();
         }
     }
+    /**
+     * Repeats the audio notification in the frequency set by the user.
+     */
     private void repeatChecks(){
-        if (repeatTimer.isRunning()) {
-            if (changeFrequnecy == 0) {
-                repeatFrequency=changeFrequnecy;
-                timer.cancel();
-            }if (repeatFrequency!=changeFrequnecy){
-                repeatFrequency=changeFrequnecy;
-                timer.cancel();
-                timer=new Timer();
-                repeatTimer=new RepeatTimer(currentSignal,this);
-                timer.scheduleAtFixedRate(repeatTimer,0,repeatFrequency*1000);
+        if(!mediaPause) {
+            if (repeatTimer.isRunning()) {
+                if (changeFrequnecy == 0) {
+                    repeatFrequency = changeFrequnecy;
+                    timer.cancel();
+                }
+                if (repeatFrequency != changeFrequnecy) {
+                    repeatFrequency = changeFrequnecy;
+                    timer.cancel();
+                    timer = new Timer();
+                    repeatTimer = new RepeatTimer(currentSignal, this);
+                    timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
+                }
             }
         }
     }
-
+    /**
+     * Creates the marker and adds the properties to it based on the signal
+     * @param gp Coordinate where the marker will be placed
+     * @param description Signal ID of the marker
+     * @param s //Signal reference corresponding to that marker
+     * @return marker after creation
+     */
     private Marker configMarker(GeoPoint gp, String description, Signal s) {
             Marker marker = new Marker(map);
             marker.setPosition(gp);
@@ -442,7 +547,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 //        map.getOverlays().clear();
 //        map.invalidate();
     }
-
+    /**
+     * Adds the color to the specific marker based on the signal reference
+     * @param so Signal Reference
+     * @param marker Marker reference
+     */
     private void addColorSignal(Signal so,Marker marker){
 
         if (so==null){
@@ -463,27 +572,41 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         }
 
     }
-
+    /**
+     *onClick listener of the GPS button which calls locationToast() method
+     */
     public void sync(View view) {
         locationToast();
     }
-
+    /**
+     * Creates the initial list of markers from the server based on their geo coordinates.
+     * @param h HashMap of the signal IDs with their corresponding geo coordinates.
+     */
     public void populateMarkers(HashMap<String, GeoPoint> h) {
         for (String s: h.keySet()){
             allMarkers.add(configMarker(h.get(s),s,null));
         }
     }
-
+    /**
+     * Adds the marker on the map
+     * @param marker marker to be added
+     */
     public void addMarker(Marker marker){
         map.getOverlays().add(marker);
         map.invalidate();
     }
-
+    /**
+     * Removes the marker on the map
+     * @param marker marker to be removed
+     */
     public void removeMarker(Marker marker){
             map.getOverlays().remove(marker);
     }
-
-    //Experiment
+    /**
+     * Returns the signal of the corresponding index in the HashMap of Signal and Marker
+     * @param n the index of the signal
+     * @return signal to be returned
+     */
     private Signal fromIndex(int n){
         for (Signal s: signalMarker.keySet()){
             if (s.getIndex()==n){
@@ -492,26 +615,30 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         }
         return null;
     }
-    public void updateSignalMap(ArrayList<Signal> s){
-        boolean change=false;
-        firstChange=false;
+    /**
+     * Updates the markers based on the new array list of signals fetched form the server
+     * @param s array list of signal
+     */
+    public void updateSignalMap(ArrayList<Signal> s) {
+        boolean change = false;
+        firstChange = false;
         repeatChecks();
-        if (s.size()!=0) {
+        if (s.size() != 0) {
             for (Signal si : s) {
                 Signal fromHash = fromIndex(si.getIndex());
                 if (fromHash != null && checkSignalWithMarker(si) != null) {
                     if (!fromHash.getSignalAspect().equals(si.getSignalAspect())) {
-                        if (si.getIndex()==1){
-                            firstChange=true;
+                        if (si.getIndex() == 1) {
+                            firstChange = true;
                         }
-                        change=true;
+                        change = true;
                         removeMarker(signalMarker.get(fromHash));
                         signalMarker.remove(fromHash);
                         signalMarker.put(si, checkSignalWithMarker(si));
                     }
                 } else if (fromHash == null && checkSignalWithMarker(si) != null) {
-                    if (si.getIndex()==1){
-                        firstChange=true;
+                    if (si.getIndex() == 1) {
+                        firstChange = true;
                     }
                     signalMarker.put(si, checkSignalWithMarker(si));
                 }
@@ -521,6 +648,10 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             }
         }
     }
+    /**
+     *Updates the current HashMap of Signal and Marker using the update logic
+     * @param m HashMap of Signal and Marker
+     */
     private void addToMap2(HashMap<Signal,Marker> m){
         for (Signal s: m.keySet()){
             if (s.getIndex()==1&&firstChange&&!mediaPause){
@@ -546,6 +677,10 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             addMarker(m.get(s));
         }
     }
+    /**
+     * Adds the array list of Signals to the Map
+     * @param signals array list of Signals
+     */
     public void addSignalToMap(ArrayList<Signal> signals){
         if (signals.size()!=0) {
             for (Signal s : signals) {
@@ -560,8 +695,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             addToMap2(signalMarker);
         }
     }
-    //close
-
+    /**
+     * Plays the audio (provided the media is not paused by the user)  corresponding of the current
+     * audio language selected.
+     * Language support as of now: English, Hindi, Bengali.
+     * @param s Signal corresponding to which the audio will be played
+     */
     public void playSpeech(Signal s) {
         if (!mediaPause) {
             switch (audioLanguage) {
@@ -616,7 +755,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             }
         }
     }
-
+    /**
+     * Checks whether the corresponding signal is in the array list of all markers
+     * @param s Signal reference
+     * @return marker corresponding to the signal
+     */
     private Marker checkSignalWithMarker(Signal s) {
             for (Marker m : allMarkers) {
                 if (m.getTitle().equals(s.getSignalID())) {
@@ -626,7 +769,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         return null;
     }
 
-
+    /**
+     * Generates the run time permission
+     * @param permission The type of permission to be displayed
+     * @param requestCode Request code of that particular permission
+     */
     private void askPermission(String permission,int requestCode){
         if (ContextCompat.checkSelfPermission(this,permission)!=PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this,new String[]{permission},requestCode);
@@ -634,7 +781,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             locationPermission=true;
         }
     }
-
+    /**
+     * Displays the relevant information based on the runtime request input by the user
+     * @param requestCode Request code
+     * @param permissions Permissions asked for
+     * @param grantResults Permissions granted
+     */
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
@@ -664,8 +816,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             // permissions this app might request.
         }
     }
-
-
+    /**
+     * Overrides the back button and finishes the activity.
+     * @param keyCode keycode of the back key
+     * @param event event to be performed
+     * @return returns the new overridden key event
+     */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)
     {
@@ -676,7 +832,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         }
         return super.onKeyDown(keyCode, event);
     }
-
+    /**
+     * OnClick button handler which changes the audio language of the app based on user input
+     */
     public void changeLanguage(View view) {
         SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
         SharedPreferences.Editor editor=preferences.edit();
@@ -697,7 +855,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             editor.apply();
         }
     }
-
+    /**
+     * onClick handler of the mute which stops or starts the media based on user input
+     */
     public void soundChange(View view) {
         if (audioButton.getTag().equals("audio")){
             mediaPause=true;
@@ -709,7 +869,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             audioButton.setImageResource(R.drawable.audio);
         }
     }
-
+    /**
+     * Creates a custom dialog box.
+     * @param title The title of the dialog box
+     * @param body Body text of the dialog box
+     * @param buttons If true buttons will appear else not
+     */
     public void exceptionRaised(String title,String body,boolean buttons) {
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
         builder.setMessage(body)
@@ -738,7 +903,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         dialog.setCancelable(false);
         dialog.show();
     }
-
+    /**
+     *onClick button handler which shows the seek bar
+     */
     public void repeatButtonHandler(View view) {
         seekBar.setVisibility(View.VISIBLE);
         repeatButton=findViewById(R.id.repeatButton);

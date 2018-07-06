@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
 import org.osmdroid.util.GeoPoint;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,24 +11,40 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
+/**
+ * This Async Task class is related to the Main Activity class which handles the network request
+ * and updates the UI based on the response.
+ * @author Anarghya Das
+ */
 public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
+    //Stores the Async Response class reference
     private AsyncResponse response;
+    //Stores the backend class reference
     private BackEnd b;
     @SuppressLint("StaticFieldLeak")
+    //Stores the main activity class refrence
     private MainActivity gp;
+    //Stores the thread control class reference
     private ThreadControl thread;
+    //Stores the current train name selected
     private String param;
+    //HTTP request related variables
     private static final String REQUEST_METHOD = "GET";
     private static final int READ_TIMEOUT = 30000;
     private static final int CONNECTION_TIMEOUT = 30000;
 
-
+    /***
+     * Constructor which initialises most of the instance variables
+     * @param b backend reference
+     * @param gp main activity reference
+     * @param t thread control reference
+     * @param param current train name
+     * @param response async response reference
+     */
     RequestTask(BackEnd b, MainActivity gp, ThreadControl t, String param,AsyncResponse response){
         this.b=b;
         this.gp=gp;
@@ -37,7 +52,9 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
         this.param=param;
         this.response=response;
     }
-
+    /**
+     * Creates the bottom navigation bar and the map before the async task is executed.
+     */
     @Override
     protected void onPreExecute() {
         if (gp.getMap()==null) {
@@ -45,7 +62,11 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             gp.createMap();
         }
     }
-
+    /**
+     * The network connections are done here in background
+     * @param uri urls of the severs to be connected
+     * @return response from the server
+     */
     @Override
     protected ArrayList<String> doInBackground(String... uri) {
         ArrayList<String> a = new ArrayList<>();
@@ -80,7 +101,10 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                 return null;
             }
     }
-
+    /**
+     * Updates the UI based on the server response
+     * @param result server response
+     */
     @Override
     protected void onPostExecute(ArrayList<String> result) {
         Log.d("key", "Request Task onPostExecute: ");
@@ -89,6 +113,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
 //            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
         }else {
             if (result.size() == 2) {
+                gp.setMapCenterOnLocation();
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 ArrayList<Train> ts=b.jsonGov(result.get(1));
                 if (ts!=null&&h!=null) {
@@ -116,13 +141,19 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                         response.processFinish("null");
                     }
                 }
-//                if (!result.get(1).equals("")){
-//                    Log.d("result", result.get(1));
-////                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
-//                }
+////                if (!result.get(1).equals("")){
+////                    Log.d("result", result.get(1));
+//////                    Toast.makeText(gp, result.get(1),Toast.LENGTH_SHORT).show();
+////                }
             }
         }
     }
+    /**
+     * Helper method which returns the corresponding signal which has the first index form the
+     * arraylist of signals
+     * @param s arraylist of signals
+     * @return signal object
+     */
     private String getFirstIndex(ArrayList<Signal> s){
         for (Signal sp: s){
             if (sp.getIndex()==1){
@@ -131,8 +162,13 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
         }
         return null;
     }
-
-
+    /**
+     * Method to set Up HTTP POST Request
+     * @param u URl
+     * @param json JSON Data to be posted
+     * @return response
+     * @throws IOException throws an exception if not executed properly
+     */
     private String post(String u, String json) throws IOException {
         String response;
             // This is getting the url from the string we passed in
@@ -183,12 +219,21 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             }
         return response;
     }
-
+    /**
+     * Converts the input stream object into String
+     * @param is input stream object
+     * @return String
+     */
     private String convertInputStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
     }
-
+    /**
+     * Method to set Up HTTP GET Request
+     * @param url URl
+     * @return response
+     * @throws IOException throws an exception if not executed properly
+     */
     private String get(String url) throws IOException {
         String result;
         String inputLine;

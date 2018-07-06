@@ -32,33 +32,61 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * This class shows the signal view with the next 3 signals in front of the train also displaying
+ * the relevant train information entered by the user.
+ * @author Anarghya Das
+ */
 public class SignalActivity extends AppCompatActivity implements AsyncResponse {
+    //Stores the user information, android id and the preferred audio language of the app
     private String trainName,trackName,android_id,audioLanguage;
     private int trainNo;
     private long phone;
+    //Stores the state of the next 3 signals
     private ImageView img1,img2,img3;
     private TextView tv1,tv2,tv3;
+    //Text View which changes the preferred audio language
     private TextView b;
+    //Stores the information whether the media is paused and error occurred or not
     private boolean mediaPause,error;
+    //Stores the time for which the error has continued occurring
     private int errorFrequency;
+    //Seek bar which controls the repeat frequency of the audio
     private SeekBar seekBar;
+    //Stores the media references of the different languages the audio is in
     private MediaPlayer mediaPlayer,speech_green_en,speech_red_en,speech_yellow_en,
             speech_yellowyellow_en,speech_green_hi,speech_red_hi,speech_yellow_hi,
             speech_yellowyellow_hi,speech_green_b,speech_red_b,speech_yellow_b,speech_yellowyellow_b;
+    //Stores the reference of thread control class
     private ThreadControl threadControl;
+    //Stores the reference of govPost async Task
     private GovPost govPost;
+    //Stores the all current GovPosts running in the background
     private ArrayList<GovPost> g;
+    //Stores the current and changed repeat frequency for the audio
     private int repeatFrequency,changeFrequnecy;
+    //Stores the condition whether repeat is on or off
     private boolean repeat;
+    //Creates the repeat timer which repeats the audio
     private RepeatTimer repeatTimer;
+    //Controls the repeat timer
     private Timer timer;
+    //Alert Dialog reference to show errors
     private AlertDialog dialog;
+    //Stores the reference of the next three signals of the train
     private Signal currentSignal,currentSignal2,currentSignal3;
+    //Stores the reference of the mute button and the repeat button
     private FloatingActionButton audioButton,repeatButton;
+    //Store the link to the government URL from where the data is fetched
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
+
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
+    /**
+     * Initialises all the above instance variables
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -129,6 +157,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         govPost.execute(govURl);
     }
 
+    /**
+     * The onTouch listener of the seek bar which allows it to work properly in a Scroll View
+     */
     private SeekBar.OnTouchListener onTouchListener= new SeekBar.OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -151,7 +182,10 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             return true;
         }
     };
-
+    /**
+     * onSeekBarChangeListener gets the changed output from the seek bar and does relevant job according
+     * to the output.
+     */
     private SeekBar.OnSeekBarChangeListener seekBarChangeListener= new SeekBar.OnSeekBarChangeListener() {
 
         @Override
@@ -166,14 +200,15 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            Toast.makeText(SignalActivity.this,"Current Repetition Frequency: "+repeatFrequency+" seconds",Toast.LENGTH_SHORT).show();
+            Toast.makeText(SignalActivity.this,"Current Repetition Frequency: "+changeFrequnecy+" seconds",Toast.LENGTH_SHORT).show();
             repeat = repeatFrequency != 0;
             seekBar.setVisibility(View.INVISIBLE);
             repeatButton.setVisibility(View.VISIBLE);
         }
     };
-
-
+    /**
+     * Controls the onClick actions of the bottom navigation bar
+     */
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -193,6 +228,10 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     i.putExtra("TrackName",trackName);
                     i.putExtra("Phone",phone);
                     i.putExtra("id",android_id);
+                    i.putExtra("sound",mediaPause);
+                    mediaPause=true;
+                    threadControl.pause();
+                    mHandler.removeCallbacks(timerTask);
                     SignalActivity.this.startActivity(i);
                     break;
             }
@@ -203,11 +242,13 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     @Override
     protected void onPause() {
         super.onPause();
-        mediaPause=true;
-        threadControl.pause();
-        mHandler.removeCallbacks(timerTask);
+//        mediaPause=true;
+//        threadControl.pause();
     }
 
+    /**
+     * Starts the Periodic async tasks and sets media pause to false
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -221,10 +262,13 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         super.onStop();
 //        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
     }
-
+    /**
+     * Stops all the sound media playing currently and removes all the aysnc tasks running in the memory
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mHandler.removeCallbacks(timerTask);
         if (repeatTimer.isRunning()) {
             timer.cancel();
         }
@@ -234,10 +278,14 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             threadControl.cancel();
         }
     }
-
+    /**
+     * This method runs after the async task is complete and executes proper functions based on the
+     * result received.
+     * @param output Stores the result of the async task after completion.
+     */
     @Override
     public void processFinish(String output) {
-        if (output.equals("null")) {
+        if (output.equals("null")&&!isFinishing()) {
             if (dialog == null) {
                 if (!mediaPause) {
                     mediaPause = true;
@@ -279,7 +327,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
         }
     }
-
+    /**
+     * Stops all the sound media currently playing in the background
+     */
     private void endAllSounds() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
@@ -321,7 +371,11 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             speech_yellow_b.stop();
         }
     }
-
+    /**
+     * Creates a json object of all the user inputs along with android device ID to send it to the
+     * server
+     * @return The json string to be sent to the server
+     */
     public String jsonPost(String status) {
         JsonObject o = new JsonObject();
         o.add("deviceId", android_id);
@@ -338,12 +392,16 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         o.add("status", status);
         return o.toString();
     }
-
+    /**
+     * Handler which creates a new async Task every second to fetch the data from the server and do
+     * the relevant job after receiving the data.
+     */
     private Handler mHandler = new Handler();
     private Runnable timerTask = new Runnable() {
         @Override
         public void run() {
             if (govPost.getStatus()== AsyncTask.Status.FINISHED) {
+                Log.d("result", "run: ");
                 govPost= new GovPost(trainName,SignalActivity.this,threadControl,SignalActivity.this);
                 govPost.execute(govURl); //backEndServer,jsonPost("active")
                 g.add(govPost);
@@ -353,23 +411,32 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
             mHandler.postDelayed(timerTask, 1);
         }};
-
+    /**
+     * Repeats the audio notification in the frequency set by the user.
+     */
     private void repeatChecks(){
-        if (repeatTimer.isRunning()) {
-            if (changeFrequnecy == 0) {
-                repeatFrequency=changeFrequnecy;
-                timer.cancel();
-            }if (repeatFrequency!=changeFrequnecy){
-                repeatFrequency=changeFrequnecy;
-                timer.cancel();
-                timer=new Timer();
-                repeatTimer=new RepeatTimer(currentSignal,this);
-                timer.scheduleAtFixedRate(repeatTimer,0,repeatFrequency*1000);
+        if(!mediaPause&&currentSignal!=null) {
+            if (repeatTimer.isRunning()) {
+                if (changeFrequnecy == 0) {
+                    repeatFrequency = changeFrequnecy;
+                    timer.cancel();
+                }
+                if (repeatFrequency != changeFrequnecy) {
+                    repeatFrequency = changeFrequnecy;
+                    timer.cancel();
+                    timer = new Timer();
+                    repeatTimer = new RepeatTimer(currentSignal, this);
+                    timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
+                }
             }
         }
     }
 
-
+    /**
+     *Returns the drawable integer reference based on the color of the signal passed.
+     * @param s The signal
+     * @return drawable reference of the signal
+     */
     private Integer getColor(Signal s){
         if (s!=null) {
             switch (s.getSignalAspect()) {
@@ -389,6 +456,12 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             return R.drawable.medium_none;
         }
     }
+
+    /**
+     * Creates and updates the signal view in the activity based on the data received from the server
+     * @param signals Array list of signals received from the server
+     * @param t The current train which the user has selected
+     */
     public void createSignal(ArrayList<Signal> signals,Train t){
         repeatChecks();
         trackName=t.getTrackName();
@@ -401,6 +474,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }else {
                 for (Signal s : signals) {
                         if (s.getIndex() == 1&&!s.getSignalAspect().equals(img1.getTag())) {
+                            currentSignal=s;
                             img1.setImageResource(getColor(s));
                             img1.setTag(s.getSignalAspect());
                             if(!mediaPause) {
@@ -408,12 +482,10 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                                 playSpeech(s);
                                 if (repeat) {
                                     if (!repeatTimer.isRunning()) {
-                                        currentSignal=s;
                                         repeatTimer = new RepeatTimer(s, this);
                                         timer = new Timer();
                                         timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
                                     } else if (repeatTimer.isRunning()) {
-                                        currentSignal=s;
                                         timer.cancel();
                                         timer = new Timer();
                                         repeatTimer = new RepeatTimer(s, this);
@@ -435,7 +507,12 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
         }
     }
-
+    /**
+     * Plays the audio (provided the media is not paused by the user)  corresponding of the current
+     * audio language selected.
+     * Language support as of now: English, Hindi, Bengali.
+     * @param s Signal corresponding to which the audio will be played
+     */
     public void playSpeech(Signal s) {
         if (!mediaPause) {
             switch (audioLanguage) {
@@ -490,7 +567,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
         }
     }
-
+    /**
+     * OnClick button handler which changes the audio language of the app based on user input
+     */
     public void changeLanguage(View view) {
         SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
         SharedPreferences.Editor editor=preferences.edit();
@@ -511,7 +590,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             editor.apply();
         }
     }
-
+    /**
+     * onClick handler of the mute which stops or starts the media based on user input
+     */
     public void soundChange(View view) {
         if (audioButton.getTag().equals("audio")){
             mediaPause=true;
@@ -523,7 +604,12 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             audioButton.setImageResource(R.drawable.audio);
         }
     }
-
+    /**
+     * Creates a custom dialog box.
+     * @param title The title of the dialog box
+     * @param body Body text of the dialog box
+     * @param buttons If true buttons will appear else not
+     */
     public void exceptionRaised(String title,String body,boolean buttons) {
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
         builder.setMessage(body)
@@ -553,7 +639,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         dialog.setCancelable(false);
         dialog.show();
     }
-
+    /**
+     *onClick button handler which shows the seek bar
+     */
     public void repeatButtonHandler(View view) {
         seekBar.setVisibility(View.VISIBLE);
         repeatButton=findViewById(R.id.repeatButton);

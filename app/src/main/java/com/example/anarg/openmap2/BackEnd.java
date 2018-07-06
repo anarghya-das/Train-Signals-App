@@ -1,7 +1,5 @@
 package com.example.anarg.openmap2;
 
-import android.annotation.SuppressLint;
-
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
@@ -10,8 +8,17 @@ import org.osmdroid.util.GeoPoint;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+/**
+ * Backend class for this project which contains helpful functions required for the app to function properly.
+ * @author Anarghya Das
+ */
 public class BackEnd {
-
+    /**
+     * Takes the response String from the server and parses the json data to create an Arraylist of
+     * trains each with their specific data.
+     * @param s json string from the server
+     * @return ArrayList of trains
+     */
     public ArrayList<Train> jsonGov(String s){
         try {
             ArrayList<Train> allInformation = new ArrayList<>();
@@ -75,7 +82,12 @@ public class BackEnd {
             return null;
         }
     }
-
+    /**
+     *Checks the train name with the arrayList of trains and returns the corresponding train object.
+     * @param t name of the train
+     * @param to arraylist of trains
+     * @return train object
+     */
     public boolean checkTrainName(String t,ArrayList<Train> to){
         for (Train c: to){
             if (c.getTrainName().equals(t)){
@@ -84,16 +96,12 @@ public class BackEnd {
         }
         return false;
     }
-
-    public Train getTrain(String t, ArrayList<Train> to){
-        for (Train c: to){
-            if (c.getTrainName().equals(t)){
-                return c;
-            }
-        }
-        return null;
-    }
-
+    /**
+     *Checks the train number with the arrayList of trains and returns the corresponding train object.
+     * @param t train number
+     * @param to arraylist of trains
+     * @return train object
+     */
     public boolean checkTrainNumber(String t,ArrayList<Train> to){
         for (Train c: to){
             if (c.getTrainId()==Integer.parseInt(t)){
@@ -102,6 +110,12 @@ public class BackEnd {
         }
         return false;
     }
+    /**
+     *Checks the track name with the arrayList of trains and returns the corresponding train object.
+     * @param param3 name of the track
+     * @param to arraylist of trains
+     * @return train object
+     */
     public boolean checkTrackName(String param3,ArrayList<Train> to) {
         for (Train c: to){
             if (c.getTrackName().equals(param3)){
@@ -110,16 +124,12 @@ public class BackEnd {
         }
         return false;
     }
-
-
-
-    public ArrayList<Signal> getSignals(ArrayList<Train> t){
-        ArrayList<Signal> sg=new ArrayList<>();
-        for (Train a: t){
-            sg.addAll(a.getSignals());
-        }
-        return  sg;
-    }
+    /**
+     *Checks the train name with the arrayList of trains and returns the corresponding train object.
+     * @param t name of the train
+     * @param t arraylist of trains
+     * @return train object
+     */
     public Train getTrainFromName(String s,ArrayList<Train> t){
         for (Train to: t){
             if(to.getTrainName().equals(s)){
@@ -128,25 +138,12 @@ public class BackEnd {
         }
         return null;
     }
-
-    public ArrayList<String> getSignalIds(ArrayList<Signal> s){
-        ArrayList<String> f=new ArrayList<>();
-        for (Signal so: s){
-            f.add(so.getSignalID());
-        }
-        return f;
-    }
-
-    public int exists(ArrayList<String> a,HashMap<String,GeoPoint> h){
-        int count=0;
-        for (String s: h.keySet()){
-            if(a.contains(s)){
-                count++;
-            }
-        }
-        return count;
-    }
-
+    /**
+     * Generates the hashmap of Signal IDs and geo coordinates by parsing json based on the response
+     * from the server.
+     * @param s json string
+     * @return HashMap of Signal ID and geo coordinates
+     */
     public HashMap<String, GeoPoint> jsonPlot(String s){
         try {
             HashMap<String, GeoPoint> m = new HashMap<>();
@@ -166,7 +163,11 @@ public class BackEnd {
             return null;
         }
     }
-
+    /**
+     * Sets the signal color of a signal based on the color code received from the server
+     * @param a ArrayList of codes
+     * @return color value for corresponding code
+     */
     private String signalColor(ArrayList<String> a) {
         String s="Yellow";
         for (String channelDescription: a) {

@@ -26,7 +26,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SignalActivity" />
+        <activity android:name=".SignalActivity"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

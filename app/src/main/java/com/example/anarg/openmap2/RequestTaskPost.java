@@ -11,21 +11,37 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 
-
+/**
+ * This Async Task class is related to the Main Screen Activity class which handles the network request
+ * and updates the UI based on the response.
+ * @author Anarghya Das
+ */
 public class RequestTaskPost extends AsyncTask<String,String,String> {
+    //Stores the reference to async response interface
     private AsyncResponse delegate;
+    //Stores the reference to backend class
     private BackEnd backEnd;
+    //HTTP request related variables
     private final int CONN_WAIT_TIME = 30000;
     private final int CONN_DATA_WAIT_TIME = 30000;
     @SuppressLint("StaticFieldLeak")
-    MainScreenActivity m;
-
+    //Stores the reference to mainscreenacitivty class
+    private MainScreenActivity m;
+    /**
+     * Constructor which initialises most of the instance variables
+     * @param m mainscreenactivity refernce
+     * @param delegate async response reference
+     */
     RequestTaskPost(MainScreenActivity m,AsyncResponse delegate){
         backEnd=new BackEnd();
         this.m=m;
         this.delegate=delegate;
     }
-
+    /**
+     * The network connections are done here in background
+     * @param strings urls of the severs to be connected
+     * @return response from the server
+     */
     @Override
     protected String doInBackground(String... strings) {
         try {
@@ -36,7 +52,10 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
             return null;
         }
     }
-
+    /**
+     * Updates the UI based on the server response
+     * @param s server response
+     */
     @Override
     protected void onPostExecute(String s) {
         if (s==null){
@@ -53,6 +72,13 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
             delegate.processFinish("done");
         }
     }
+    /**
+     * Method to set Up HTTP POST Request
+     * @param u URl
+     * @param json JSON Data to be posted
+     * @return response
+     * @throws IOException throws an exception if not executed properly
+     */
     private String post(String u, String json) throws IOException {
         String response;
             // This is getting the url from the string we passed in
@@ -107,13 +133,20 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
 
         return response;
     }
+    /**
+     * Converts the input stream object into String
+     * @param is input stream object
+     * @return String
+     */
     private String convertInputStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
     }
-
-
-    //Helper Method
+    /**
+     * Helper method to convert array list of train objects into train name array.
+     * @param t array list of train objects
+     * @return array of train names
+     */
     private String[] trainArray(ArrayList<Train> t){
         String[] trains=new String[t.size()];
         for (int i=0;i<t.size();i++){
@@ -121,7 +154,11 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
         }
         return trains;
     }
-
+    /**
+     * Helper method to convert array list of train objects into train IDs array.
+     * @param t array list of train objects
+     * @return array of train IDs
+     */
     private String[] trainID(ArrayList<Train> t){
         String[] ids=new String[t.size()];
         for (int i=0;i<t.size();i++){
@@ -129,7 +166,11 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
         }
         return ids;
     }
-
+    /**
+     * Helper method to convert array list of train objects into track name array.
+     * @param t array list of train objects
+     * @return array of track names
+     */
     private String[] trackName(ArrayList<Train> t){
         String[] trackName=new String[t.size()];
         for (int i=0;i<t.size();i++){

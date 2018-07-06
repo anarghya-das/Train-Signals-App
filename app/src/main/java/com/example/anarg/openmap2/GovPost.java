@@ -2,9 +2,7 @@ package com.example.anarg.openmap2;
 
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
-import android.os.Parcelable;
 import android.util.Log;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,16 +11,33 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
+/**
+ * This Async Task class is related to the Signal Activity class which handles the network request
+ * and updates the UI based on the response.
+ * @author Anarghya Das
+ */
 public class GovPost extends AsyncTask<String,Void,String> {
+    //Reference to the Async Response Interface
     private AsyncResponse response;
+    //Stores the current train
     private String train;
+    //Stores the reference to the backend class
     private BackEnd backEnd;
     @SuppressLint("StaticFieldLeak")
+    //Stores the reference to the Signal Activity class
     private SignalActivity signalActivity;
+    //Stores the reference to the Thread Control class
     private ThreadControl threadControl;
+    //Stores the connection wait and the read wait times
     private final int CONN_WAIT_TIME = 30000;
     private final int CONN_DATA_WAIT_TIME = 30000;
-
+    /**
+     * Constructor which initializes the instance variables that need to be initialized.
+     * @param s current train
+     * @param signalActivity signal activity reference
+     * @param threadControl thread control reference
+     * @param response async response reference
+     */
     GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl,AsyncResponse response){
         backEnd=new BackEnd();
         train=s;
@@ -30,7 +45,11 @@ public class GovPost extends AsyncTask<String,Void,String> {
         this.threadControl=threadControl;
         this.response=response;
     }
-
+    /**
+     * The network connections are done here in background
+     * @param strings urls of the severs to be connected
+     * @return response from the server
+     */
     @Override
     protected String doInBackground(String... strings) {
         try {
@@ -51,7 +70,10 @@ public class GovPost extends AsyncTask<String,Void,String> {
             return null;
         }
     }
-
+    /**
+     * Updates the UI based on the server response
+     * @param s server response
+     */
     @Override
     protected void onPostExecute(String s) {
         if (s!=null){
@@ -70,7 +92,13 @@ public class GovPost extends AsyncTask<String,Void,String> {
             response.processFinish("null");
         }
     }
-
+    /**
+     * Method to set Up HTTP POST Request
+     * @param u URl
+     * @param json JSON Data to be posted
+     * @return response
+     * @throws IOException throws an exception if not executed properly
+     */
     private String post(String u, String json) throws IOException {
         String response;
         // This is getting the url from the string we passed in
@@ -123,6 +151,11 @@ public class GovPost extends AsyncTask<String,Void,String> {
 
         return response;
     }
+    /**
+     * Converts the input stream object into String
+     * @param is input stream object
+     * @return String
+     */
     private String convertInputStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
