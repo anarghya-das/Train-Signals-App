@@ -15,30 +15,49 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
+/**
+ * This async task is related to the Main Screen activity which is responsible for connecting to the backend
+ * server, sending device "active" requests and checking whether no other device is logged in with the same
+ * train information.
+ * @author Anarghya Das
+ */
 public class ServerPost extends AsyncTask<String,Void,String> {
     @SuppressLint("StaticFieldLeak")
+    //Stores the reference to main screen activity
     private MainScreenActivity mainScreenActivity;
+    //stores the parameters entered by the user
     private String param,param2,param3,android_id;
     private long num;
-    @SuppressLint("StaticFieldLeak")
-    private EditText et;
-    private BackEnd backEnd;
-    private ArrayList<Train> trains;
-
+    //Stores the reference to async response interface
+    private AsyncResponse asyncResponse;
+    //HTTP connection parameters
+    private final int CONN_WAIT_TIME = 30000; //in milliseconds
+    private final int CONN_DATA_WAIT_TIME = 30000; //in milliseconds
+    /**
+     * Constructor to initialize the above instance variables.
+     * @param mainScreenActivity Stores the main activity reference
+     * @param param3 stores the track name
+     * @param param stores the train name
+     * @param param2 stores the train number
+     * @param num stores the phone number
+     * @param android_id stores the android id of the phone
+     * @param asyncResponse stores the async response interface reference
+     */
     ServerPost(MainScreenActivity mainScreenActivity, String param3, String param, String param2,
-               EditText et,ArrayList<Train> t,long num,String android_id) {
+               long num,String android_id,AsyncResponse asyncResponse) {
         this.mainScreenActivity=mainScreenActivity;
         this.param=param;
         this.param2=param2;
         this.param3=param3;
-        this.et=et;
         this.num=num;
-        backEnd=new BackEnd();
-        trains=t;
         this.android_id=android_id;
+        this.asyncResponse=asyncResponse;
     }
-
-
+    /**
+     * The network connections are done here in background
+     * @param strings urls of the severs to be connected
+     * @return response from the server
+     */
     @Override
     protected String doInBackground(String... strings) {
         try {
@@ -47,13 +66,14 @@ public class ServerPost extends AsyncTask<String,Void,String> {
             return null;
         }
     }
-
+    /**
+     * Updates the UI based on the server response
+     * @param s server response
+     */
     @Override
     protected void onPostExecute(String s) {
-        Log.d("result", s);
         try {
             if (s.trim().equals("good")) {
-
                 Intent i = new Intent(mainScreenActivity, SignalActivity.class);
                 i.putExtra("Signal", param);
                 i.putExtra("TrainNumber",Integer.parseInt(param2));
@@ -64,18 +84,21 @@ public class ServerPost extends AsyncTask<String,Void,String> {
 //                Toast.makeText(mainScreenActivity,"YAAAAY",Toast.LENGTH_SHORT).show();
             } else {
                 if (s.equals("error")){
-                    mainScreenActivity.exceptionRaised();
-                }
-                else {
-                    Toast.makeText(mainScreenActivity, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
+                    asyncResponse.processFinish("error");
                 }
             }
         }
         catch (NullPointerException e){
-            Toast.makeText(mainScreenActivity, "Something was wrong!", Toast.LENGTH_SHORT).show();
+            asyncResponse.processFinish("error2");
         }
     }
-
+    /**
+     * Method to set Up HTTP POST Request
+     * @param u URl
+     * @param json JSON Data to be posted
+     * @return response
+     * @throws IOException throws an exception if not executed properly
+     */
     private String post(String u, String json) throws IOException {
         String response;
             // This is getting the url from the string we passed in
@@ -83,7 +106,8 @@ public class ServerPost extends AsyncTask<String,Void,String> {
 
             // Create the urlConnection
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
+            urlConnection.setConnectTimeout(CONN_WAIT_TIME);
+            urlConnection.setReadTimeout(CONN_DATA_WAIT_TIME);
 
             urlConnection.setDoInput(true);
             urlConnection.setDoOutput(true);
@@ -127,6 +151,11 @@ public class ServerPost extends AsyncTask<String,Void,String> {
 
         return response;
     }
+    /**
+     * Converts the input stream object into String
+     * @param is input stream object
+     * @return String
+     */
     private String convertInputStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";

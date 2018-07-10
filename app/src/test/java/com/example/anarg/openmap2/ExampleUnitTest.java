@@ -24,6 +24,8 @@ import java.util.ArrayList;
  */
 public class ExampleUnitTest {
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String url="http://192.168.0.106/railway/senddevicelocations.cgi";
+    private static final String url2="https://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     @Test
     public void JsonTest() throws IOException {
@@ -31,7 +33,8 @@ public class ExampleUnitTest {
         String s=postagain(govURl,"sf");
         ArrayList<Train> t=b.jsonGov(s);
         Train to=b.getTrainFromName("Howrah-Bandel Local",t);
-        System.out.println(get("http://14.139.219.37/railway/jsonrender.php"));
+//        System.out.println(get("http://14.139.219.37/railway/jsonrender.php"));
+        System.out.println(postagain(url,jsonPost()));
 //        System.out.println(to);
 //        ArrayList<Train> ts=new ArrayList<>();
 //        System.out.println(ts.size());
@@ -50,7 +53,7 @@ public class ExampleUnitTest {
         o3.add("latitude",22.5817837);
         o3.add("longitude", 88.4587077);
         o.add("coordinate",o3);
-        o.add("status","notactive");
+        o.add("status","active");
 //        Log.d("worksend", o.toString());
         return o.toString();
     }

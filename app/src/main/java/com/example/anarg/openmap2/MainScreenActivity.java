@@ -32,6 +32,7 @@ This class controls the welcome screen of the app.
 public class MainScreenActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
     //Government URL from which the data is fetched in the app
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     //Autocomplete widget used to display train name, train number and track name respectively
@@ -81,7 +82,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
                 editText.setText(Long.toString(n));
             }
             if (requestTaskPost.getStatus()==RequestTask.Status.RUNNING){
-                load();
+                load("Please wait while the data loads...");
             }
         }else{
             exceptionRaised("Connectivity Error","Enable mobile data or WiFi to use this app.");
@@ -94,7 +95,11 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     protected void onResume() {
         super.onResume();
         if (restart&&dialog!=null){
-            this.recreate();
+            finish();
+            Intent i = getBaseContext().getPackageManager()
+                    .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(i);
             restart=false;
         }
     }
@@ -116,11 +121,20 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         if (dialog.isShowing()) {
             dialog.dismiss();
         }
-        if (asyncOutput.equals("null")){
-            exceptionRaised("Server Problem","Cannot connect to the Server.Please try again Later.");
-
-        }else if (asyncOutput.equals("null2")){
-            exceptionRaised("Network Problem","Please check your network Connection and Try again Later.");
+        switch (asyncOutput) {
+            case "null":
+                exceptionRaised("Server Problem", "Cannot connect to the Server.Please try again Later.");
+                break;
+            case "null2":
+                exceptionRaised("Network Problem", "Please check your network Connection and Try again Later.");
+                break;
+            case "error":
+                exceptionRaised("Multiple Devices Error", "Currently a device is already logged into this train.\n" +
+                        "Please check your information and try again.");
+                break;
+            case "error2":
+                exceptionRaised("Connection Error", "Please check your network connection and try again!");
+                break;
         }
     }
 
@@ -210,7 +224,6 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
             editText.setText("");
         }
     }
-
     /**
      * OnClick button handler of the Enter button, checks whether all the input is correct or not
      * and then starts the new intent to the next activity.
@@ -233,15 +246,17 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
 //                Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
             } else if (backEnd.checkTrainName(param, trains) && backEnd.checkTrainNumber(param2, trains)
                     && backEnd.checkTrackName(param3, trains)) {
-                Intent i = new Intent(this, SignalActivity.class);
-                i.putExtra("Signal", param);
-                i.putExtra("TrainNumber",Integer.parseInt(param2));
-                i.putExtra("TrackName",param3);
-                i.putExtra("Phone",num);
-                i.putExtra("id",android_id);
-                this.startActivity(i);
-//                new ServerPost(this, param3, param, param2, editText, trains, num,android_id).execute(backEndServer,
-//                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
+                load("Please wait, Checking your inputs!");
+
+//                Intent i = new Intent(this, SignalActivity.class);
+//                i.putExtra("Signal", param);
+//                i.putExtra("TrainNumber",Integer.parseInt(param2));
+//                i.putExtra("TrackName",param3);
+//                i.putExtra("Phone",num);
+//                i.putExtra("id",android_id);
+//                this.startActivity(i);
+                new ServerPost(this, param3, param, param2, num,android_id,this).execute(backEndServer,
+                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
             } else{
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             }
@@ -293,7 +308,6 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         }
         return result;
     }
-
     /**
      * Method which creates a custom dialog box to show if the program encountered an error
      * @param title Title of the dialog box
@@ -306,6 +320,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                finish();
                 Intent i = getBaseContext().getPackageManager()
                         .getLaunchIntentForPackage( getBaseContext().getPackageName() );
                 i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -324,27 +339,11 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         dialog.show();
     }
     /**
-     * Method which creates a custom dialog box to show if the program encountered an error
-     */
-    public void exceptionRaised() {
-        AlertDialog.Builder builder=new AlertDialog.Builder(this);
-        builder.setMessage("There was some problem connecting to the Server!\nPlease try again later.")
-                .setTitle("Error");
-        builder.setNegativeButton("Exit", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finish();
-            }
-        });
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-    /**
      * Method which creates the loading dialog when the data takes time to load
      */
-    private void load(){
+    private void load(String body){
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
-        builder.setMessage("Please wait while the data loads...")
+        builder.setMessage(body)
                 .setTitle("Loading");
         dialog = builder.create();
         dialog.setCanceledOnTouchOutside(false);

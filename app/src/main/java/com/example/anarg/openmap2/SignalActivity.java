@@ -79,6 +79,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private FloatingActionButton audioButton,repeatButton;
     //Store the link to the government URL from where the data is fetched
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
 
@@ -245,7 +246,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
 //        mediaPause=true;
 //        threadControl.pause();
     }
-
     /**
      * Starts the Periodic async tasks and sets media pause to false
      */
@@ -260,7 +260,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     @Override
     protected void onStop() {
         super.onStop();
-//        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
     }
     /**
      * Stops all the sound media playing currently and removes all the aysnc tasks running in the memory
@@ -268,15 +267,14 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
         mHandler.removeCallbacks(timerTask);
         if (repeatTimer.isRunning()) {
             timer.cancel();
         }
         endAllSounds();
-        for (GovPost go: g) {
-            go.cancel(true);
-            threadControl.cancel();
-        }
+        govPost.cancel(true);
+        threadControl.cancel();
     }
     /**
      * This method runs after the async task is complete and executes proper functions based on the
@@ -404,7 +402,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                 Log.d("result", "run: ");
                 govPost= new GovPost(trainName,SignalActivity.this,threadControl,SignalActivity.this);
                 govPost.execute(govURl); //backEndServer,jsonPost("active")
-                g.add(govPost);
+//                g.add(govPost);
             }
             if (error){
                 errorFrequency++;
@@ -431,7 +429,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
         }
     }
-
     /**
      *Returns the drawable integer reference based on the color of the signal passed.
      * @param s The signal

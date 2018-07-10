@@ -9,8 +9,17 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/**
+ * Async task which sends "notactive" requests to the backend server which implies that this device
+ * is not using the particular train information.
+ * @author Anarghya Das
+ */
 public class NotActiveTask extends AsyncTask<String,Void,Void> {
-
+    /**
+     * The network connections are done here in background
+     * @param strings urls of the severs to be connected
+     * @return response from the server
+     */
     @Override
     protected Void doInBackground(String... strings) {
         try {
@@ -20,7 +29,13 @@ public class NotActiveTask extends AsyncTask<String,Void,Void> {
         }
         return null;
     }
-
+    /**
+     * Method to set Up HTTP POST Request
+     * @param u URl
+     * @param json JSON Data to be posted
+     * @return response
+     * @throws IOException throws an exception if not executed properly
+     */
     private String post(String u, String json) throws IOException {
         String response;
         // This is getting the url from the string we passed in
@@ -71,6 +86,11 @@ public class NotActiveTask extends AsyncTask<String,Void,Void> {
 
         return response;
     }
+    /**
+     * Converts the input stream object into String
+     * @param is input stream object
+     * @return String
+     */
     private String convertInputStreamToString(java.io.InputStream is) {
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
