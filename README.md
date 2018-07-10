@@ -1,0 +1,2 @@
+# Train-Signal-App
+This app is primarily designed for the train drivers of the Indian Railways. This app will help the drivers while they are running the train by notifying them about the aspect of the next three signals ahead of them. This app also features a map view where the drivers can see their current location and the location and aspects of the next three signals in front of them on the map. 
