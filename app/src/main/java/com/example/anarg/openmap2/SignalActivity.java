@@ -79,11 +79,12 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private FloatingActionButton audioButton,repeatButton;
     //Store the link to the government URL from where the data is fetched
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
 
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
+    //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
+
 
     /**
      * Initialises all the above instance variables
@@ -267,7 +268,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
+//        new NotActiveTask().execute(backEndServer,jsonPost("notactive"));
         mHandler.removeCallbacks(timerTask);
         if (repeatTimer.isRunning()) {
             timer.cancel();

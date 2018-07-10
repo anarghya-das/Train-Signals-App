@@ -32,7 +32,7 @@ This class controls the welcome screen of the app.
 public class MainScreenActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
     //Government URL from which the data is fetched in the app
     private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
-    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
+//    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     //Autocomplete widget used to display train name, train number and track name respectively
@@ -95,11 +95,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     protected void onResume() {
         super.onResume();
         if (restart&&dialog!=null){
-            finish();
-            Intent i = getBaseContext().getPackageManager()
-                    .getLaunchIntentForPackage( getBaseContext().getPackageName() );
-            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(i);
+            restart();
             restart=false;
         }
     }
@@ -246,17 +242,18 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
 //                Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
             } else if (backEnd.checkTrainName(param, trains) && backEnd.checkTrainNumber(param2, trains)
                     && backEnd.checkTrackName(param3, trains)) {
-                load("Please wait, Checking your inputs!");
+//                load("Please wait, Checking your inputs!");
 
-//                Intent i = new Intent(this, SignalActivity.class);
-//                i.putExtra("Signal", param);
-//                i.putExtra("TrainNumber",Integer.parseInt(param2));
-//                i.putExtra("TrackName",param3);
-//                i.putExtra("Phone",num);
-//                i.putExtra("id",android_id);
-//                this.startActivity(i);
-                new ServerPost(this, param3, param, param2, num,android_id,this).execute(backEndServer,
-                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
+                Intent i = new Intent(this, SignalActivity.class);
+                i.putExtra("Signal", param);
+                i.putExtra("TrainNumber",Integer.parseInt(param2));
+                i.putExtra("TrackName",param3);
+                i.putExtra("Phone",num);
+                i.putExtra("id",android_id);
+                this.startActivity(i);
+
+//                new ServerPost(this, param3, param, param2, num,android_id,this).execute(backEndServer,
+//                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
             } else{
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             }
@@ -320,11 +317,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                finish();
-                Intent i = getBaseContext().getPackageManager()
-                        .getLaunchIntentForPackage( getBaseContext().getPackageName() );
-                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(i);
+                restart();
             }
         });
         builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
@@ -349,6 +342,16 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         dialog.setCanceledOnTouchOutside(false);
         dialog.setCancelable(false);
         dialog.show();
+    }
+    /**
+     * Helper method to restart this activity
+     */
+    private void restart(){
+        finish();
+        Intent i = getBaseContext().getPackageManager()
+                .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(i);
     }
 
 }
