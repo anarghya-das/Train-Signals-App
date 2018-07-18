@@ -128,9 +128,11 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                 if (ts!=null) {
                     response.processFinish("okay1");
                     Train t = b.getTrainFromName(param, ts);
-                    gp.populateMarkers(h);
-                    gp.addSignalToMap(t.getSignals());
-                    gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
+                    if (t!=null) {
+                        gp.populateMarkers(h);
+                        gp.addSignalToMap(t.getSignals());
+                        gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
+                    }
                 }
             }
             if (result.size() == 3) {

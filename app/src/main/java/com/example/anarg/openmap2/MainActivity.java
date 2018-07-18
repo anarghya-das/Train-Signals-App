@@ -160,9 +160,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         signalActivity=new SignalActivity();
         backend = new BackEnd();
         threadControl = new ThreadControl();
-        SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
-        audioLanguage= preferences.getString("audio","Hindi");
-        b.setText(audioLanguage);
         mediaPlayer=MediaPlayer.create(this,R.raw.sound);
         speech_green_en=MediaPlayer.create(this,R.raw.green_en);
         speech_red_en=MediaPlayer.create(this,R.raw.red_en);
@@ -183,6 +180,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         phone = i.getLongExtra("Phone", 0);
         android_id = i.getStringExtra("id");
         mediaPause=i.getBooleanExtra("sound",false);
+        audioLanguage= i.getStringExtra("language");
+        b.setText(audioLanguage);
         requestTask = new RequestTask(backend, this, threadControl, trainName,this);
         requestTask.execute(reqURl, tmsURL);
 //        setMapCenter();

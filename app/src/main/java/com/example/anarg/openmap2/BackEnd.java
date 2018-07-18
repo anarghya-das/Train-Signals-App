@@ -132,8 +132,10 @@ public class BackEnd {
      */
     public Train getTrainFromName(String s,ArrayList<Train> t){
         for (Train to: t){
-            if(to.getTrainName().equals(s)){
-                return to;
+            if (to!=null) {
+                if (to.getTrainName().equals(s)) {
+                    return to;
+                }
             }
         }
         return null;

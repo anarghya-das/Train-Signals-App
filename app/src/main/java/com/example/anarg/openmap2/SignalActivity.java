@@ -130,7 +130,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         tv2.setText("Train Number: "+trainNo);
         tv3.setText("Track Name: "+trackName);
         SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
-        audioLanguage= preferences.getString("audio","Hindi");
+        audioLanguage= preferences.getString("audio","Bengali");
         b.setText(audioLanguage);
         mediaPlayer=MediaPlayer.create(this,R.raw.sound);
         speech_green_en=MediaPlayer.create(this,R.raw.green_en);
@@ -233,6 +233,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     i.putExtra("Phone",phone);
                     i.putExtra("id",android_id);
                     i.putExtra("sound",mediaPause);
+                    i.putExtra("language",audioLanguage);
                     mediaPause=true;
                     endAllSounds();
                     threadControl.pause();
