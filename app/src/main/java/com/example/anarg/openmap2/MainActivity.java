@@ -53,6 +53,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     //Mapview which stores the map to be displayed
     private MapView map = null;
+    //Stores the reference of SignalActivity
+    private SignalActivity signalActivity;
     //Map controller
     private IMapController mapController;
     //Stores the current location overlay of the user
@@ -79,8 +81,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     //Stores the URL of the server from where the coordinates of signals are received
 //    private static final String reqURl = "http://14.139.219.37/railway/jsonrender.php";
     private static final String reqURl = "https://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
-    //Stores the URL of the government server from where the train data is fetched
-    private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    //Stores the URL of the TMS server from where the train data is fetched
+    private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
@@ -108,13 +110,14 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private AlertDialog dialog;
     //Stores whether the current location permission is enabled or not
     private boolean locationPermission;
-    //Stores all the currently running async Tasks
-    private ArrayList<RequestTask> g;
+    //Timeout duration of the app after it encounters an error
+    private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
     /**
      * Initialises all the above instance variables
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("Loading Time", "mapStarted ");
         super.onCreate(savedInstanceState);
 //        setTraceLifecycle(true);
         //handle permissions first, before map is created. not depicted here
@@ -131,7 +134,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         repeatTimer=new RepeatTimer();
         allMarkers = new ArrayList<>();
         signalMarker=new HashMap<>();
-        g=new ArrayList<>();
         user_Long=0.0;
         user_Lat=0.0;
         Context ctx = getApplicationContext();
@@ -155,6 +157,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         seekBar.setProgress(repeatFrequency);
         seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
         repeatButton=findViewById(R.id.repeatButton);
+        signalActivity=new SignalActivity();
         backend = new BackEnd();
         threadControl = new ThreadControl();
         SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
@@ -181,7 +184,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         android_id = i.getStringExtra("id");
         mediaPause=i.getBooleanExtra("sound",false);
         requestTask = new RequestTask(backend, this, threadControl, trainName,this);
-        requestTask.execute(reqURl, govURl);
+        requestTask.execute(reqURl, tmsURL);
 //        setMapCenter();
         askPermission(Manifest.permission.ACCESS_FINE_LOCATION,MY_PERMISSIONS_REQUEST_LOCATION);
         if (locationPermission){
@@ -205,6 +208,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     @Override
     public void processFinish(String output) {
         if (output.equals("null")) {
+            if (!isRunning){
+                mHandler.post(timerTask);
+            }
             if (dialog == null) {
                 if (!mediaPause) {
                     mediaPause = true;
@@ -229,10 +235,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 error=true;
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
                         "\nIn the mean while check if your internet connection is working.", false);
-            }else if (errorFrequency==60000){
+            }else if (errorFrequency>=TIMEOUT_ERROR_TIME){
                 dialog.dismiss();
                 exceptionRaised("Connection Error", "Could not reconnect." +
                         "\nThere might be some problem, please try again later!", true);
+                errorFrequency=0;
             }
         }else if (dialog!=null&&dialog.isShowing()&&output.equals("okay")){
             error=false;
@@ -252,14 +259,15 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             if (dialog == null) {
                 exceptionRaised("Connection Error1", "Please wait while we try to reconnect.",false);
                 requestTask = new RequestTask(backend, this, threadControl, trainName,this);
-                requestTask.execute(reqURl, govURl);
+                requestTask.execute(reqURl, tmsURL);
             }else if (!dialog.isShowing()){
                 exceptionRaised("Connection Error1", "Please wait while we try to reconnect.",false);
                 requestTask = new RequestTask(backend, this, threadControl, trainName,this);
-                requestTask.execute(reqURl, govURl);
+                requestTask.execute(reqURl, tmsURL);
             }
         }else if (output.equals("okay1")){
             mHandler.post(timerTask);
+            Log.d("Loading Time", "mapDone ");
         }
     }
     /**
@@ -323,6 +331,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 case R.id.map_view:
                     break;
                 case R.id.signal_view:
+                    signalActivity.setMediaPause(false);
                     finish();
                     break;
             }
@@ -356,16 +365,18 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
      * the relevant job after receiving the data.
      */
         private Handler mHandler = new Handler();
-        private Runnable timerTask = new Runnable() {
+        private boolean isRunning=false;
+    private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
                 if (requestTask.getStatus()== AsyncTask.Status.FINISHED) {
                     requestTask = new RequestTask(backend, MainActivity.this, threadControl, trainName,MainActivity.this);
-                    requestTask.execute("", govURl);// backEndServer
-                    g.add(requestTask);
+                    requestTask.execute("", tmsURL);// backEndServer
+                    isRunning=true;
                 }
                 if (error){
                     errorFrequency++;
+                    Log.d("ERRORTEST", "ET: "+ errorFrequency);
                 }
                 mHandler.postDelayed(timerTask, 1);
             }};
@@ -401,8 +412,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             return false;
         } else {
             myLocation = myLocationoverlay.getMyLocation();
-            double user_Lat1 = myLocation.getLatitude();
-            double user_Long1 = myLocation.getLongitude();
+            double user_Lat1=0.0,user_Long1=0.0;
+            if (myLocation!=null) {
+                 user_Lat1 = myLocation.getLatitude();
+                 user_Long1 = myLocation.getLongitude();
+            }
             if (user_Lat==user_Lat1||user_Long==user_Long1){
                 return false;
             }else {
@@ -521,10 +535,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         if (repeatTimer.isRunning()) {
             timer.cancel();
         }
-        for (RequestTask go: g) {
-            go.cancel(true);
+            requestTask.cancel(true);
             threadControl.cancel();
-        }
     }
     /**
      * Repeats the audio notification in the frequency set by the user.
@@ -817,6 +829,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
                     myLocationoverlay = new MyLocationNewOverlay(gp, map);
                     myLocationoverlay.enableMyLocation();
+                    Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
+                    myLocationoverlay.setPersonIcon(bitmapIcon);
                     myLocationoverlay.setDrawAccuracyEnabled(false);
                     map.getOverlays().add(myLocationoverlay);
                     map.invalidate();
@@ -911,10 +925,19 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     i.putExtra("Exit", true);
                     startActivity(i);
+
                 }
             });
         }
         dialog = builder.create();
+        if (buttons) {
+            dialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Signal View", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                }
+            });
+        }
         dialog.setCanceledOnTouchOutside(false);
         dialog.setCancelable(false);
         dialog.show();

@@ -59,10 +59,8 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             speech_yellowyellow_hi,speech_green_b,speech_red_b,speech_yellow_b,speech_yellowyellow_b;
     //Stores the reference of thread control class
     private ThreadControl threadControl;
-    //Stores the reference of govPost async Task
-    private GovPost govPost;
-    //Stores the all current GovPosts running in the background
-    private ArrayList<GovPost> g;
+    //Stores the reference of SignalPostRequest async Task
+    private SignalPostRequest SignalPostRequest;
     //Stores the current and changed repeat frequency for the audio
     private int repeatFrequency,changeFrequnecy;
     //Stores the condition whether repeat is on or off
@@ -77,8 +75,8 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private Signal currentSignal,currentSignal2,currentSignal3;
     //Stores the reference of the mute button and the repeat button
     private FloatingActionButton audioButton,repeatButton;
-    //Store the link to the government URL from where the data is fetched
-    private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    //Store the link to the TMS URL from where the data is fetched
+    private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
 
@@ -123,7 +121,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         seekBar.setProgress(repeatFrequency);
         seekBar.setOnTouchListener(onTouchListener);
         seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
-        g=new ArrayList<>();
         Intent i = getIntent();
         trainName = i.getStringExtra("Signal");
         trainNo = i.getIntExtra("TrainNumber",0);
@@ -155,10 +152,16 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         MenuItem menuItem= menu.getItem(1);
         menuItem.setChecked(true);
         threadControl=new ThreadControl();
-        govPost= new GovPost(trainName,this,threadControl,this);
-        govPost.execute(govURl);
+        SignalPostRequest= new SignalPostRequest(trainName,this,threadControl,this);
+        SignalPostRequest.execute(tmsURL);
     }
-
+    /**
+     * Sets the value of media pause
+     * @param value media pause state
+     */
+    public void setMediaPause(boolean value){
+        mediaPause=value;
+    }
     /**
      * The onTouch listener of the seek bar which allows it to work properly in a Scroll View
      */
@@ -231,6 +234,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     i.putExtra("Phone",phone);
                     i.putExtra("id",android_id);
                     i.putExtra("sound",mediaPause);
+                    mediaPause=true;
                     endAllSounds();
                     threadControl.pause();
                     mHandler.removeCallbacks(timerTask);
@@ -274,7 +278,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             timer.cancel();
         }
         endAllSounds();
-        govPost.cancel(true);
+        SignalPostRequest.cancel(true);
         threadControl.cancel();
     }
     /**
@@ -284,6 +288,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
      */
     @Override
     public void processFinish(String output) {
+        if (!isRunning){
+            mHandler.post(timerTask);
+        }
         if (output.equals("null")&&!isFinishing()) {
             if (dialog == null) {
                 if (!mediaPause) {
@@ -305,10 +312,11 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                 img3.setImageResource(getColor(null));
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
                         "\nIn the mean while check if your internet connection is working.", false);
-            }else if (errorFrequency==TIMEOUT_ERROR_TIME){
+            }else if (errorFrequency>=TIMEOUT_ERROR_TIME){
                 dialog.dismiss();
                 exceptionRaised("Connection Error", "Could not reconnect." +
                         "\nThere might be some problem, please try again later!", true);
+                errorFrequency=0;
             }
         }else if (dialog!=null&&dialog.isShowing()&&output.equals("okay")){
             error=false;
@@ -396,14 +404,15 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
      * the relevant job after receiving the data.
      */
     private Handler mHandler = new Handler();
+    private boolean isRunning=false;
     private Runnable timerTask = new Runnable() {
         @Override
         public void run() {
-            if (govPost.getStatus()== AsyncTask.Status.FINISHED) {
+            if (SignalPostRequest.getStatus()== AsyncTask.Status.FINISHED) {
                 Log.d("result", "run: ");
-                govPost= new GovPost(trainName,SignalActivity.this,threadControl,SignalActivity.this);
-                govPost.execute(govURl); //backEndServer,jsonPost("active")
-//                g.add(govPost);
+                SignalPostRequest= new SignalPostRequest(trainName,SignalActivity.this,threadControl,SignalActivity.this);
+                SignalPostRequest.execute(tmsURL); //backEndServer,jsonPost("active")
+                isRunning=true;
             }
             if (error){
                 errorFrequency++;

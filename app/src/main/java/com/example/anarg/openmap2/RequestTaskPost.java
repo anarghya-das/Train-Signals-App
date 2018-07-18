@@ -64,7 +64,7 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
             delegate.processFinish("null2");
         }
         else {
-            ArrayList<Train> allTrains = backEnd.jsonGov(s);
+            ArrayList<Train> allTrains = backEnd.jsonParse(s);
             m.setTrains(allTrains);
             m.createTrainNameView(trainArray(allTrains), allTrains);
             m.createTrainIDView(trainID(allTrains), allTrains);

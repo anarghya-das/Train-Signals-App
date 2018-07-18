@@ -14,6 +14,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -30,8 +31,8 @@ This class controls the welcome screen of the app.
 @author Anarghya Das
  */
 public class MainScreenActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
-    //Government URL from which the data is fetched in the app
-    private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    //TMS URL from which the data is fetched in the app
+    private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
@@ -58,6 +59,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     @SuppressLint({"HardwareIds", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("Loading Time", "initialStarted ");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_screen);
         restart=false;
@@ -75,7 +77,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
             editText = findViewById(R.id.editText);
             direction = findViewById(R.id.directionView);
             RequestTaskPost requestTaskPost = new RequestTaskPost(this, this);
-            requestTaskPost.execute(govURl);
+            requestTaskPost.execute(tmsURL);
             SharedPreferences pref = getSharedPreferences("myPref", MODE_PRIVATE);
             long n = pref.getLong("number", 0);
             if (n != 0) {
@@ -116,6 +118,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     public void processFinish(String asyncOutput) {
         if (dialog.isShowing()) {
             dialog.dismiss();
+            Log.d("Loading Time", "initialDone ");
         }
         switch (asyncOutput) {
             case "null":

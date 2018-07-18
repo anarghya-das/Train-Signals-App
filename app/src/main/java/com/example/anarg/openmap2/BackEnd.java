@@ -19,7 +19,7 @@ public class BackEnd {
      * @param s json string from the server
      * @return ArrayList of trains
      */
-    public ArrayList<Train> jsonGov(String s){
+    public ArrayList<Train> jsonParse(String s){
         try {
             ArrayList<Train> allInformation = new ArrayList<>();
             JsonValue jsonValue = Json.parse(s);

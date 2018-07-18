@@ -23,22 +23,36 @@ import java.util.ArrayList;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 public class ExampleUnitTest {
-    private static final String govURl = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
+    private static final String tmsURL2="http://tms.affineit.com:4445/SignalAhead/Json/SendDeviceInfo";
     private static final String url="http://192.168.0.106/railway/senddevicelocations.cgi";
     private static final String url2="https://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     @Test
     public void JsonTest() throws IOException {
-        BackEnd b=new BackEnd();
-        String s=postagain(govURl,"sf");
-        ArrayList<Train> t=b.jsonGov(s);
-        Train to=b.getTrainFromName("Howrah-Bandel Local",t);
+//        BackEnd b=new BackEnd();
+//        String s=postagain(tmsURL,"sf");
+//        ArrayList<Train> t=b.jsonParse(s);
+//        Train to=b.getTrainFromName("Howrah-Bandel Local",t);
 //        System.out.println(get("http://14.139.219.37/railway/jsonrender.php"));
-        System.out.println(postagain(url,jsonPost()));
+        System.out.print(postagain(tmsURL2,"asds"));
+//        System.out.println(jsonPost2());
+//        System.out.println(postagain(tmsURL2,jsonPost2()));
 //        System.out.println(to);
 //        ArrayList<Train> ts=new ArrayList<>();
 //        System.out.println(ts.size());
 //        System.out.println(ts==null);
+    }
+    private String jsonPost2(){
+        JsonObject main=new JsonObject();
+        main.add("DeviceIP","192.168.120.100");
+        main.add("DeviceId",123213);
+        main.add("Latitude",22.5817837);
+        main.add("Longitude",88.4587077);
+        main.add("PlatformNo","1A");
+        main.add("StationCode","BDC");
+        main.add("TrainNo","12365");
+        return main.toString();
     }
     private String jsonPost(){
         JsonObject o=new JsonObject();
@@ -58,7 +72,7 @@ public class ExampleUnitTest {
         return o.toString();
     }
     private String postagain(String s,String p){
-        String response;
+        String response="";
         try {
             // This is getting the url from the string we passed in
             URL url = new URL(s);
@@ -83,6 +97,7 @@ public class ExampleUnitTest {
             }
 
             int statusCode = urlConnection.getResponseCode();
+            System.out.println(statusCode);
 
             if (statusCode ==  200) {
 
@@ -101,7 +116,7 @@ public class ExampleUnitTest {
             }
 
         } catch (Exception e) {
-            return null;
+            e.printStackTrace();
         }
         return response;
     }

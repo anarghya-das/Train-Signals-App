@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * and updates the UI based on the response.
  * @author Anarghya Das
  */
-public class GovPost extends AsyncTask<String,Void,String> {
+public class SignalPostRequest extends AsyncTask<String,Void,String> {
     //Reference to the Async Response Interface
     private AsyncResponse response;
     //Stores the current train
@@ -24,7 +24,7 @@ public class GovPost extends AsyncTask<String,Void,String> {
     //Stores the reference to the backend class
     private BackEnd backEnd;
     @SuppressLint("StaticFieldLeak")
-    //Stores the reference to the Signal Activity class
+    //Stores the refer  ence to the Signal Activity class
     private SignalActivity signalActivity;
     //Stores the reference to the Thread Control class
     private ThreadControl threadControl;
@@ -38,7 +38,7 @@ public class GovPost extends AsyncTask<String,Void,String> {
      * @param threadControl thread control reference
      * @param response async response reference
      */
-    GovPost(String s,SignalActivity signalActivity,ThreadControl threadControl,AsyncResponse response){
+    SignalPostRequest(String s,SignalActivity signalActivity,ThreadControl threadControl,AsyncResponse response){
         backEnd=new BackEnd();
         train=s;
         this.signalActivity=signalActivity;
@@ -77,7 +77,7 @@ public class GovPost extends AsyncTask<String,Void,String> {
     @Override
     protected void onPostExecute(String s) {
         if (s!=null){
-            ArrayList<Train> ts=backEnd.jsonGov(s);
+            ArrayList<Train> ts=backEnd.jsonParse(s);
             if (ts!=null) {
                 Train t = backEnd.getTrainFromName(train, ts);
                 if (t != null && t.getSignals().size() != 0) {
