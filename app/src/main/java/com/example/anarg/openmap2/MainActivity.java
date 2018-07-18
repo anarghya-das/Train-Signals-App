@@ -493,7 +493,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             speech_green_en.stop();
         }
         if (speech_green_hi.isPlaying()) {
-            speech_green_en.stop();
+            speech_green_hi.stop();
         }
         if (speech_red_en.isPlaying()) {
             speech_red_en.stop();
