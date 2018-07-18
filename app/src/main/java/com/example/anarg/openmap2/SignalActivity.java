@@ -293,9 +293,8 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         }
         if (output.equals("null")&&!isFinishing()) {
             if (dialog == null) {
-                if (!mediaPause) {
-                    mediaPause = true;
-                }
+                mediaPause = true;
+                endAllSounds();
                 error=true;
                 img1.setImageResource(getColor(null));
                 img2.setImageResource(getColor(null));
@@ -303,9 +302,8 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
                         "\nIn the mean while check if your internet connection is working.", false);
             } else if (!dialog.isShowing()) {
-                if (!mediaPause) {
-                    mediaPause = true;
-                }
+                mediaPause = true;
+                endAllSounds();
                 error=true;
                 img1.setImageResource(getColor(null));
                 img2.setImageResource(getColor(null));
