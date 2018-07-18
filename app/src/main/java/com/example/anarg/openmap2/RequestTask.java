@@ -118,7 +118,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
         if (result==null){
             response.processFinish("null");
 //            gp.exceptionRaised("There was some problem connecting to the Server!\nPlease try again later.");
-        }else if (result.size()==1){
+        }else if (result.size()==1){ //If the database server fails
             response.processFinish("null1");
         } else {
             if (result.size() == 2) {

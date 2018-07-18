@@ -212,9 +212,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 mHandler.post(timerTask);
             }
             if (dialog == null) {
-                if (!mediaPause) {
-                    mediaPause = true;
-                }
+                mediaPause = true;
+                endAllSounds();
                 error=true;
                 for (Marker m: signalMarker.values()){
                     removeMarker(m);
@@ -224,9 +223,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect." +
                         "\nIn the mean while check if your internet connection is working.", false);
             } else if (!dialog.isShowing()) {
-                if (!mediaPause) {
-                    mediaPause = true;
-                }
+                mediaPause = true;
+                endAllSounds();
                 for (Marker m: signalMarker.values()){
                     removeMarker(m);
                     addColorSignal(null,m);
@@ -257,15 +255,24 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             }
         }else if (output.equals("null1")){
             if (dialog == null) {
-                exceptionRaised("Connection Error1", "Please wait while we try to reconnect.",false);
+                mediaPause = true;
+                endAllSounds();
+                exceptionRaised("Connection Error", "Please wait while we try to reconnect.",false);
                 requestTask = new RequestTask(backend, this, threadControl, trainName,this);
                 requestTask.execute(reqURl, tmsURL);
             }else if (!dialog.isShowing()){
-                exceptionRaised("Connection Error1", "Please wait while we try to reconnect.",false);
+                mediaPause = true;
+                endAllSounds();
+                exceptionRaised("Connection Error", "Please wait while we try to reconnect.",false);
                 requestTask = new RequestTask(backend, this, threadControl, trainName,this);
                 requestTask.execute(reqURl, tmsURL);
             }
         }else if (output.equals("okay1")){
+            if (audioButton.getTag().equals("noaudio")) {
+                mediaPause = true;
+            }else if (audioButton.getTag().equals("audio")){
+                mediaPause=false;
+            }
             mHandler.post(timerTask);
             Log.d("Loading Time", "mapDone ");
         }
