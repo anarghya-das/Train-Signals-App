@@ -35,7 +35,7 @@ public class ExampleUnitTest {
 //        ArrayList<Train> t=b.jsonParse(s);
 //        Train to=b.getTrainFromName("Howrah-Bandel Local",t);
 //        System.out.println(get("http://14.139.219.37/railway/jsonrender.php"));
-        System.out.print(postagain(tmsURL2,"asds"));
+        System.out.print(postagain(tmsURL,"asds"));
 //        System.out.println(jsonPost2());
 //        System.out.println(postagain(tmsURL2,jsonPost2()));
 //        System.out.println(to);

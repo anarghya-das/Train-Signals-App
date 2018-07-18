@@ -337,7 +337,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 case R.id.map_view:
                     break;
                 case R.id.signal_view:
-                    signalActivity.setMediaPause(false);
                     finish();
                     break;
             }
@@ -455,9 +454,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     public void onResume() {
         super.onResume();
         mediaPause = false;
+        threadControl.resume();
         if (requestTask.getStatus().equals(AsyncTask.Status.FINISHED)) {
             mHandler.post(timerTask);
-            threadControl.resume();
         }
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
@@ -472,6 +471,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         super.onPause();
         threadControl.pause();
         mediaPause=true;
+        endAllSounds();
         mHandler.removeCallbacks(timerTask);
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use

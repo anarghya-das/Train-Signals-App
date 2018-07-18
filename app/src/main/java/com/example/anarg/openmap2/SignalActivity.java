@@ -88,6 +88,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("Problem", "onCreate: ");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.signal_screen);
         repeatFrequency=10;
@@ -154,12 +155,12 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         SignalPostRequest= new SignalPostRequest(trainName,this,threadControl,this);
         SignalPostRequest.execute(tmsURL);
     }
-    /**
-     * Sets the value of media pause
-     * @param value media pause state
-     */
-    public void setMediaPause(boolean value){
-        mediaPause=value;
+    @Override
+    protected void onStart() {
+        Log.d("Problem", "onStart: ");
+        super.onStart();
+        mediaPause=false;
+        isRunning=false;
     }
     /**
      * The onTouch listener of the seek bar which allows it to work properly in a Scroll View
@@ -238,6 +239,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     endAllSounds();
                     threadControl.pause();
                     mHandler.removeCallbacks(timerTask);
+                    isRunning=false;
                     SignalActivity.this.startActivity(i);
                     break;
             }
@@ -257,9 +259,14 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     @Override
     protected void onResume() {
         super.onResume();
-        mediaPause=false;
-        mHandler.post(timerTask);
-        threadControl.resume();
+        Log.d("Problem", Boolean.toString(mediaPause));
+        Log.d("Problem", audioLanguage);
+//        mediaPause=false;
+        Log.d("Problem", Boolean.toString(isRunning));
+        if(!isRunning) {
+            mHandler.post(timerTask);
+            threadControl.resume();
+        }
     }
 
     @Override
@@ -327,9 +334,10 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
             if (audioButton.getTag().equals("noaudio")) {
                 mediaPause = true;
-            }else if (audioButton.getTag().equals("audio")){
+            }if (audioButton.getTag().equals("audio")){
                 mediaPause=false;
             }
+            Log.d("Problem", Boolean.toString(mediaPause));
         }
     }
     /**
