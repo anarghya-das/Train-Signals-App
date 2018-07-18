@@ -83,7 +83,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
 
-
     /**
      * Initialises all the above instance variables
      */
