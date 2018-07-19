@@ -337,6 +337,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 case R.id.map_view:
                     break;
                 case R.id.signal_view:
+                    Intent intent=new Intent(MainActivity.this,SignalActivity.class);
+                    intent.putExtra("language",audioLanguage);
+                    setResult(RESULT_OK,intent);
                     finish();
                     break;
             }

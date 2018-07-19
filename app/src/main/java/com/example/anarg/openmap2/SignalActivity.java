@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
@@ -155,13 +156,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         SignalPostRequest= new SignalPostRequest(trainName,this,threadControl,this);
         SignalPostRequest.execute(tmsURL);
     }
-    @Override
-    protected void onStart() {
-        Log.d("Problem", "onStart: ");
-        super.onStart();
-        mediaPause=false;
-        isRunning=false;
-    }
     /**
      * The onTouch listener of the seek bar which allows it to work properly in a Scroll View
      */
@@ -239,13 +233,33 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     endAllSounds();
                     threadControl.pause();
                     mHandler.removeCallbacks(timerTask);
-                    isRunning=false;
-                    SignalActivity.this.startActivity(i);
+                    SignalActivity.this.startActivityForResult(i,2);
                     break;
             }
             return false;
         }
     };
+    /**
+     * Receives the data passed from the Main Activity
+     * @param requestCode code which was assigned to the intent while passing
+     * @param resultCode code which was assigned to the intent while sending
+     * @param data data passed through the intent while sending
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d("Problem", "onActivityResult: ");
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode==2){
+            if (resultCode==RESULT_OK){
+                audioLanguage= data.getStringExtra("language");
+                b.setText(audioLanguage);
+                mediaPause=false;
+                isRunning=false;
+                audioButton.setTag("audio");
+                audioButton.setImageResource(R.drawable.audio);
+            }
+        }
+    }
 
     @Override
     protected void onPause() {
@@ -254,7 +268,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
 //        threadControl.pause();
     }
     /**
-     * Starts the Periodic async tasks and sets media pause to false
+     * Starts the Periodic async tasks
      */
     @Override
     protected void onResume() {
