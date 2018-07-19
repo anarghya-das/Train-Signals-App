@@ -61,15 +61,14 @@ The app which is primarily designed for train drivers uses an existing service c
 }]
                                       Figure 2: Sample TMS Server JSON data 
 ```
-The text shown in Figure 2 is a sample JSON data sent by the TMS server. Direction, Track Name, Train ID, Train Name, Train Number are the information extracted from the JSON string provided by the TMS Server. Train objects are created using this information. zSignals is used to get information about the signals in front of the train. Index, track name, and relays inside the zToAspectSignal object is used to create signal objects for the respective trains. 
-The color of the signals is decoded using the following chart:
-Signal Key	Signal Color Value
-“RGKE”	Red
-“HGKE”	Yellow
-“HGKE” and “HGKE”	YellowYellow
-“DGKE”	Green
+The text shown in Figure 2 is a sample JSON data sent by the TMS server. Direction, Track Name, Train ID, Train Name, Train Number are the information extracted from the JSON string provided by the TMS Server. Train objects are created using this information. zSignals is used to get information about the signals in front of the train. Index, track name, and relays inside the zToAspectSignal object is used to create signal objects for the respective trains.<br>
+The color of the signals is decoded using the following chart:<br>
+| First Header  | Second Header |
+| ------------- | ------------- |
+| Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  |
 
-<b>Open Street Map API</b>: The open source API which provides the applications with the map interface.
-<b>Mobile Application></b>: Sends and receives the HTTP Requests and performs all the processes necessary for the working of the application.
-<b>Web GIS Application</b>: A central application which keeps a track of all the active mobile applications by plotting their locations on the map while getting the data from the database server.
-<b>Database Server</b>: A SQL server which provides additional data for both the applications.
+<b>Open Street Map API</b>: The open source API which provides the applications with the map interface.<br>
+<b>Mobile Application</b>: Sends and receives the HTTP Requests and performs all the processes necessary for the working of the application.<br>
+<b>Web GIS Application</b>: A central application which keeps a track of all the active mobile applications by plotting their locations on the map while getting the data from the database server.<br>
+<b>Database Server</b>: A SQL server which provides additional data for both the applications.<br>
