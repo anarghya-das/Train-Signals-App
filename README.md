@@ -16,6 +16,8 @@ The app which is primarily designed for train drivers uses an existing service c
 2.	To Show the train drivers their current location and the location of upcoming signals.
 3.	No implementation cost as everyone owns a smartphone these days.
 # Basic Architecture 
+![alt text](https://github.com/anarghya-das/Train-Signals-App/blob/master/Images/figure1.png)<br>
+*Figure 1: Basic Architecture Diagram*<br>
 <b>TMS Server</b>: The main server on which the mobile application works. It is responsible to provide the train information in the form of JSON. The server updates the JSON data about every 5-10 millisecond. 
 ```JSON
 [{
@@ -58,9 +60,9 @@ The app which is primarily designed for train drivers uses an existing service c
 			}]
 		}
 	}]
-}]
-                                      Figure 2: Sample TMS Server JSON data 
+}]                                     
 ```
+*Figure 2: Sample TMS Server JSON data* 
 The text shown in Figure 2 is a sample JSON data sent by the TMS server. Direction, Track Name, Train ID, Train Name, Train Number are the information extracted from the JSON string provided by the TMS Server. Train objects are created using this information. zSignals is used to get information about the signals in front of the train. Index, track name, and relays inside the zToAspectSignal object is used to create signal objects for the respective trains.<br>
 The color of the signals is decoded using the following chart:<br>
 
