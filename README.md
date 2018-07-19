@@ -1,4 +1,4 @@
-# Train-Signal-App
+# Train-Signals-App
 Indian Railways has a huge system of trains running throughout the country on a daily basis. For any large system, the safety of their workers and passengers is of utmost importance and unusual weather conditions like fog or heavy rainfall restrict the view of the train driver and hamper their decision making, in turn, putting their lives and the passengers live in danger.
 
 Many people might not consider the mere fog as a danger to trains, but throughout the years it has been one of the deadliest natural phenomena which were a cause of a lot of accidents. 
