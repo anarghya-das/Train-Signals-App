@@ -63,12 +63,28 @@ The app which is primarily designed for train drivers uses an existing service c
 ```
 The text shown in Figure 2 is a sample JSON data sent by the TMS server. Direction, Track Name, Train ID, Train Name, Train Number are the information extracted from the JSON string provided by the TMS Server. Train objects are created using this information. zSignals is used to get information about the signals in front of the train. Index, track name, and relays inside the zToAspectSignal object is used to create signal objects for the respective trains.<br>
 The color of the signals is decoded using the following chart:<br>
-| First Header  | Second Header |
+
+| Signal Key  | Signal Color Value |
 | ------------- | ------------- |
-| Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  |
+| "RGKE" | Red  |
+| "HGKE"  | Yellow  |
+| "HGKE" and "HGKE" | YellowYellow  |
+| "DGKE"  | Green  |
 
 <b>Open Street Map API</b>: The open source API which provides the applications with the map interface.<br>
 <b>Mobile Application</b>: Sends and receives the HTTP Requests and performs all the processes necessary for the working of the application.<br>
 <b>Web GIS Application</b>: A central application which keeps a track of all the active mobile applications by plotting their locations on the map while getting the data from the database server.<br>
 <b>Database Server</b>: A SQL server which provides additional data for both the applications.<br>
+# Use Case Diagaram 
+<b>Train Driver</b>: The primary actor of the Use Case diagram who interacts with the Main Screen, Signal View and Map View of the app. The app was primarily designed for the primary actor, Train Driver.
+
+<b>TMS</b>: The secondary actor of the Use Case diagram which provides the app with the train data from which the required information is fetched from the app.
+
+**Open Street Map**: Another secondary actor of the Use Case diagram which provides the app with the map data from which the map is created in the Map View of the app.
+
+**Main Screen**: The first module with which the primary actor (train driver) interacts with as soon as the app is opened. It has an "include" relationship with **Connectivity Check** and **Train Data** which means that every time it starts the connectivity check for the internet connection is bound to happen and it will also fetch the train data from the TMS server automatically. It also has an "extend" relationship with **Display Error** which means that it will not be shown every time the Main Screen module starts but only under certain conditions (when connectivity check fails or Train Driver enters incorrect details).
+
+**Signal View**: The second module with which the primary actor (train driver) can interact after the Main Screen module. It has an "include" relationship with **Train Data** which means that every time this module starts the app will fetch the train data from the TMS server automatically. It also has an "extend" relationship with **Connection Lost Error** which means that it will not be shown every time this module starts but only under certain conditions (when
+internet connection is lost).
+
+**Map View**: The third module with which the primary actor (train driver) can interact after the **Signal View**. It has an "include" relationship with **Train Data** and **Load Map Data** which means that every time this module starts the app will fetch the train data from the TMS server and map data from the Open Street Map API automatically. It also has an "extend" relationship with **Connection Lost Error** which means that it will not be shown every time this module starts but only under certain conditions (when internet connection is lost).
