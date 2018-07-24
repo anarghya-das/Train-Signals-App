@@ -40,12 +40,12 @@ import java.util.TimerTask;
  */
 public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     //Stores the user information, android id and the preferred audio language of the app
-    private String trainName,trackName,android_id,audioLanguage;
+    private String trainName,trackName,android_id,audioLanguage,direction;
     private int trainNo;
     private long phone;
     //Stores the state of the next 3 signals
     private ImageView img1,img2,img3;
-    private TextView tv1,tv2,tv3;
+    private TextView tv1,tv2,tv3,tv4,signalID1,signalID2,signalID3;
     //Text View which changes the preferred audio language
     private TextView b;
     //Stores the information whether the media is paused and error occurred or not
@@ -115,6 +115,10 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         tv1=findViewById(R.id.trainName);
         tv2=findViewById(R.id.trainNumber);
         tv3=findViewById(R.id.trackName);
+        tv4=findViewById(R.id.direction);
+        signalID1=findViewById(R.id.SignalID1);
+        signalID2=findViewById(R.id.SignalID2);
+        signalID3=findViewById(R.id.SignalID3);
         repeatButton=findViewById(R.id.repeatButton);
         audioButton= findViewById(R.id.soundButton);
         seekBar=findViewById(R.id.repeatBar);
@@ -128,9 +132,11 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         trackName = i.getStringExtra("TrackName");
         phone = i.getLongExtra("Phone", 0);
         android_id=i.getStringExtra("id");
+        direction=i.getStringExtra("Direction");
         tv1.setText("Train Name: "+trainName);
         tv2.setText("Train Number: "+trainNo);
         tv3.setText("Track Name: "+trackName);
+        tv4.setText(direction);
         SharedPreferences preferences= getSharedPreferences("myPref",MODE_PRIVATE);
         audioLanguage= preferences.getString("audio","Bengali");
         b.setText(audioLanguage);
@@ -500,10 +506,15 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                 img3.setImageResource(getColor(null));
             }else {
                 for (Signal s : signals) {
-                        if (s.getIndex() == 1&&!s.getSignalAspect().equals(img1.getTag())) {
-                            currentSignal=s;
-                            img1.setImageResource(getColor(s));
-                            img1.setTag(s.getSignalAspect());
+                        if (s.getIndex() == 1) {
+                            String currentID=(String)signalID1.getText().subSequence(11,signalID1.length());
+                            if(!s.getSignalID().equals(currentID)) {
+                                signalID1.setText("Signal ID: " + s.getSignalID());
+                            }
+                            if (!s.getSignalAspect().equals(img1.getTag())){
+                                currentSignal=s;
+                                img1.setImageResource(getColor(s));
+                                img1.setTag(s.getSignalAspect());
                             if(!mediaPause) {
                                 mediaPlayer.start();
                                 playSpeech(s);
@@ -519,16 +530,28 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                                         timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
                                     }
                                 }
-
                             }
-                        } else if (s.getIndex() == 2&&!s.getSignalAspect().equals(img2.getTag())) {
-                            currentSignal2=s;
-                            img2.setImageResource(getColor(s));
-                            img2.setTag(s.getSignalAspect());
-                        } else if (s.getIndex() == 3&&!s.getSignalAspect().equals(img3.getTag())) {
-                            currentSignal3=s;
-                            img3.setImageResource(getColor(s));
-                            img3.setTag(s.getSignalAspect());
+                            }
+                        } else if (s.getIndex() == 2 ) {
+                            String currentID=(String)signalID2.getText().subSequence(11,signalID2.length());
+                            if(!s.getSignalID().equals(currentID)) {
+                                signalID2.setText("Signal ID: " + s.getSignalID());
+                            }
+                            if (!s.getSignalAspect().equals(img2.getTag())) {
+                                currentSignal2=s;
+                                img2.setImageResource(getColor(s));
+                                img2.setTag(s.getSignalAspect());
+                            }
+                        } else if (s.getIndex() == 3) {
+                            String currentID=(String)signalID3.getText().subSequence(11,signalID3.length());
+                            if(!s.getSignalID().equals(currentID)) {
+                                signalID3.setText("Signal ID: " + s.getSignalID());
+                            }
+                            if (!s.getSignalAspect().equals(img3.getTag())) {
+                                currentSignal3=s;
+                                img3.setImageResource(getColor(s));
+                                img3.setTag(s.getSignalAspect());
+                            }
                         }
                 }
             }

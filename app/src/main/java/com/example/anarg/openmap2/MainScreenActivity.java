@@ -232,6 +232,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         String param=autocompleteView.getText().toString();
         String param2=autocompleteView2.getText().toString();
         String param3=autoCompleteTextView3.getText().toString();
+        TextView direction=findViewById(R.id.directionView);
         try {
             long num = Long.parseLong(editText.getText().toString());
             SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
@@ -253,6 +254,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
                 i.putExtra("TrackName",param3);
                 i.putExtra("Phone",num);
                 i.putExtra("id",android_id);
+                i.putExtra("Direction",direction.getText());
                 this.startActivity(i);
 
 //                new ServerPost(this, param3, param, param2, num,android_id,this).execute(backEndServer,

@@ -28,7 +28,7 @@
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="304dp"
-        android:layout_height="112dp"
+        android:layout_height="129dp"
         android:layout_marginTop="16dp"
         android:background="@drawable/layout_bg"
         android:orientation="vertical"
@@ -74,6 +74,18 @@
             android:textSize="17sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/direction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="3dp"
+            android:layout_marginStart="3dp"
+            android:layout_marginTop="3dp"
+            android:text="Direction: "
+            android:textColor="@android:color/black"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
 
     </LinearLayout>
 
@@ -101,6 +113,16 @@
             android:textColor="@android:color/black"
             android:textSize="15sp"
             android:textStyle="bold" />
+        <TextView
+            android:id="@+id/SignalID1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Signal ID: "
+            android:textColor="@android:color/black"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
 
         <ImageView
             android:id="@+id/firstSignal"
@@ -131,6 +153,15 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="2nd Signal Ahead"
+            android:textColor="@android:color/black"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/SignalID2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Signal ID: "
             android:textColor="@android:color/black"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -168,6 +199,16 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="3rd Signal Ahead"
+            android:textColor="@android:color/black"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/SignalID3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Signal ID: "
             android:textColor="@android:color/black"
             android:textSize="15sp"
             android:textStyle="bold" />

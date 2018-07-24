@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
@@ -112,6 +113,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private boolean locationPermission;
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
+    //Stores the location manager reference which checks whether GPS is on or not
     /**
      * Initialises all the above instance variables
      */
@@ -123,80 +125,84 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         //handle permissions first, before map is created. not depicted here
         // Write you code here if permission already given.
         //load/initialize the osmdroid configuration, this can be done
-        locationPermission=false;
-        firstChange=false;
-        repeat=true;
-        error=false;
-        errorFrequency=0;
-        changeFrequnecy=10;
-        repeatFrequency=10;
-        currentSignal=null;
-        repeatTimer=new RepeatTimer();
-        allMarkers = new ArrayList<>();
-        signalMarker=new HashMap<>();
-        user_Long=0.0;
-        user_Lat=0.0;
-        Context ctx = getApplicationContext();
-        Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
-        //setting this before the layout is inflated is a good idea
-        //it 'should' ensure that the map has a writable location for the map cache, even without permissions
-        //if no tiles are displayed, you can try overriding the cache path using Configuration.getInstance().setCachePath
-        //see also StorageUtils
-        //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
-        //inflate and create the map
-        setContentView(R.layout.activity_main);
-        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        am.setStreamVolume(
-                AudioManager.STREAM_MUSIC,
-                am.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-                0);
-        b=findViewById(R.id.langButton);
-        audioButton= findViewById(R.id.soundButton);
-        seekBar=findViewById(R.id.repeatBar);
-        seekBar.setMax(30);
-        seekBar.setProgress(repeatFrequency);
-        seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
-        repeatButton=findViewById(R.id.repeatButton);
-        signalActivity=new SignalActivity();
-        backend = new BackEnd();
-        threadControl = new ThreadControl();
-        mediaPlayer=MediaPlayer.create(this,R.raw.sound);
-        speech_green_en=MediaPlayer.create(this,R.raw.green_en);
-        speech_red_en=MediaPlayer.create(this,R.raw.red_en);
-        speech_yellow_en=MediaPlayer.create(this,R.raw.yellow_en);
-        speech_yellowyellow_en=MediaPlayer.create(this,R.raw.yellowyellow_en);
-        speech_green_hi=MediaPlayer.create(this,R.raw.green_hi);
-        speech_red_hi=MediaPlayer.create(this,R.raw.red_hi);
-        speech_yellow_hi=MediaPlayer.create(this,R.raw.yellow_hi);
-        speech_yellowyellow_hi=MediaPlayer.create(this,R.raw.yellowyellow_hi);
-        speech_green_b=MediaPlayer.create(this,R.raw.green_b);
-        speech_red_b=MediaPlayer.create(this,R.raw.red_b);
-        speech_yellow_b=MediaPlayer.create(this,R.raw.yellow_b);
-        speech_yellowyellow_b=MediaPlayer.create(this,R.raw.yellowyellow_b);
-        Intent i = getIntent();
-        trainName = i.getStringExtra("Signal");
-        trainNo = i.getIntExtra("TrainNumber",0);
-        trackName = i.getStringExtra("TrackName");
-        phone = i.getLongExtra("Phone", 0);
-        android_id = i.getStringExtra("id");
-        mediaPause=i.getBooleanExtra("sound",false);
-        audioLanguage= i.getStringExtra("language");
-        b.setText(audioLanguage);
-        requestTask = new RequestTask(backend, this, threadControl, trainName,this);
-        requestTask.execute(reqURl, tmsURL);
+        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
+            locationPermission = false;
+            firstChange = false;
+            repeat = true;
+            error = false;
+            errorFrequency = 0;
+            changeFrequnecy = 10;
+            repeatFrequency = 10;
+            currentSignal = null;
+            repeatTimer = new RepeatTimer();
+            allMarkers = new ArrayList<>();
+            signalMarker = new HashMap<>();
+            user_Long = 0.0;
+            user_Lat = 0.0;
+            Context ctx = getApplicationContext();
+            Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
+            //setting this before the layout is inflated is a good idea
+            //it 'should' ensure that the map has a writable location for the map cache, even without permissions
+            //if no tiles are displayed, you can try overriding the cache path using Configuration.getInstance().setCachePath
+            //see also StorageUtils
+            //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
+            //inflate and create the map
+            setContentView(R.layout.activity_main);
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            am.setStreamVolume(
+                    AudioManager.STREAM_MUSIC,
+                    am.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                    0);
+            b = findViewById(R.id.langButton);
+            audioButton = findViewById(R.id.soundButton);
+            seekBar = findViewById(R.id.repeatBar);
+            seekBar.setMax(30);
+            seekBar.setProgress(repeatFrequency);
+            seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
+            repeatButton = findViewById(R.id.repeatButton);
+            signalActivity = new SignalActivity();
+            backend = new BackEnd();
+            threadControl = new ThreadControl();
+            mediaPlayer = MediaPlayer.create(this, R.raw.sound);
+            speech_green_en = MediaPlayer.create(this, R.raw.green_en);
+            speech_red_en = MediaPlayer.create(this, R.raw.red_en);
+            speech_yellow_en = MediaPlayer.create(this, R.raw.yellow_en);
+            speech_yellowyellow_en = MediaPlayer.create(this, R.raw.yellowyellow_en);
+            speech_green_hi = MediaPlayer.create(this, R.raw.green_hi);
+            speech_red_hi = MediaPlayer.create(this, R.raw.red_hi);
+            speech_yellow_hi = MediaPlayer.create(this, R.raw.yellow_hi);
+            speech_yellowyellow_hi = MediaPlayer.create(this, R.raw.yellowyellow_hi);
+            speech_green_b = MediaPlayer.create(this, R.raw.green_b);
+            speech_red_b = MediaPlayer.create(this, R.raw.red_b);
+            speech_yellow_b = MediaPlayer.create(this, R.raw.yellow_b);
+            speech_yellowyellow_b = MediaPlayer.create(this, R.raw.yellowyellow_b);
+            Intent i = getIntent();
+            trainName = i.getStringExtra("Signal");
+            trainNo = i.getIntExtra("TrainNumber", 0);
+            trackName = i.getStringExtra("TrackName");
+            phone = i.getLongExtra("Phone", 0);
+            android_id = i.getStringExtra("id");
+            mediaPause = i.getBooleanExtra("sound", false);
+            audioLanguage = i.getStringExtra("language");
+            b.setText(audioLanguage);
+            requestTask = new RequestTask(backend, this, threadControl, trainName, this);
+            requestTask.execute(reqURl, tmsURL);
 //        setMapCenter();
-        askPermission(Manifest.permission.ACCESS_FINE_LOCATION,MY_PERMISSIONS_REQUEST_LOCATION);
-        if (locationPermission){
-            GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
-            myLocationoverlay = new MyLocationNewOverlay(gp, map);
-            myLocationoverlay.enableMyLocation();
-            myLocationoverlay.setDrawAccuracyEnabled(false);
-            Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
-            myLocationoverlay.setPersonIcon(bitmapIcon);
-            map.getOverlays().add(myLocationoverlay);
-            myLocation=myLocationoverlay.getMyLocation();
-            map.invalidate();
+            askPermission(Manifest.permission.ACCESS_FINE_LOCATION, MY_PERMISSIONS_REQUEST_LOCATION);
+            if (locationPermission) {
+                GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
+                myLocationoverlay = new MyLocationNewOverlay(gp, map);
+                myLocationoverlay.enableMyLocation();
+                myLocationoverlay.setDrawAccuracyEnabled(false);
+                Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
+                myLocationoverlay.setPersonIcon(bitmapIcon);
+                map.getOverlays().add(myLocationoverlay);
+                myLocation = myLocationoverlay.getMyLocation();
+                map.invalidate();
 //            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
+            }
+        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+            buildAlertMessageNoGps();
         }
     }
     /**
@@ -958,5 +964,22 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         seekBar.setVisibility(View.VISIBLE);
         repeatButton=findViewById(R.id.repeatButton);
         repeatButton.setVisibility(View.INVISIBLE);
+    }
+    private void buildAlertMessageNoGps() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Your GPS seems to be disabled, do you want to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(@SuppressWarnings("unused") final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
     }
 }
