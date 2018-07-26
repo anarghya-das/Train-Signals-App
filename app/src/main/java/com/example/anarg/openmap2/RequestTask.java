@@ -126,24 +126,24 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 ArrayList<Train> ts=b.jsonParse(result.get(1));
                 if (ts!=null) {
-                    response.processFinish("okay1");
                     Train t = b.getTrainFromName(param, ts);
                     if (t!=null) {
                         gp.populateMarkers(h);
                         gp.addSignalToMap(t.getSignals());
                         gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
+                        response.processFinish("okay1");
                     }
                 }
             }
             if (result.size() == 3) {
                 if (!result.get(0).equals("")) {
-                    response.processFinish("okay");
                     ArrayList<Train> ts=b.jsonParse(result.get(0));
                     if (ts!=null) {
                         Train t = b.getTrainFromName(param, ts);
                         if (t != null) {
                             Log.d("list", "RUN");
                             gp.updateSignalMap(t.getSignals());
+                            response.processFinish("okay");
                         }
                     }
                     else{
@@ -257,7 +257,11 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             connection.setConnectTimeout(CONNECTION_TIMEOUT);
 
             //Connect to our url
+        try {
             connection.connect();
+        }catch (Exception e){
+            throw new IOException("GET");
+        }
             //Create a new InputStreamReader
             InputStreamReader streamReader = new
                     InputStreamReader(connection.getInputStream());

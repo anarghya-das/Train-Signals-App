@@ -54,8 +54,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     //Mapview which stores the map to be displayed
     private MapView map = null;
-    //Stores the reference of SignalActivity
-    private SignalActivity signalActivity;
     //Map controller
     private IMapController mapController;
     //Stores the current location overlay of the user
@@ -82,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     //Stores the URL of the server from where the coordinates of signals are received
 //    private static final String reqURl = "http://14.139.219.37/railway/jsonrender.php";
     private static final String reqURl = "https://irtrainsignalsystem.herokuapp.com/cgi-bin/signals";
+//    private static final String reqURl = "http://192.168.0.102/railway/signals.cgi";
     //Stores the URL of the TMS server from where the train data is fetched
     private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 
@@ -113,6 +112,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private boolean locationPermission;
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
+    //Checks whether the initial connection to the database server is okay or not
+    private boolean initialError;
     //Stores the location manager reference which checks whether GPS is on or not
     /**
      * Initialises all the above instance variables
@@ -139,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             signalMarker = new HashMap<>();
             user_Long = 0.0;
             user_Lat = 0.0;
+            initialError=false;
             Context ctx = getApplicationContext();
             Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
             //setting this before the layout is inflated is a good idea
@@ -160,7 +162,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             seekBar.setProgress(repeatFrequency);
             seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
             repeatButton = findViewById(R.id.repeatButton);
-            signalActivity = new SignalActivity();
             backend = new BackEnd();
             threadControl = new ThreadControl();
             mediaPlayer = MediaPlayer.create(this, R.raw.sound);
@@ -259,27 +260,39 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 mediaPause=false;
             }
         }else if (output.equals("null1")){
+            initialError=true;
+            error=true;
             if (dialog == null) {
                 mediaPause = true;
                 endAllSounds();
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect.",false);
-                requestTask = new RequestTask(backend, this, threadControl, trainName,this);
-                requestTask.execute(reqURl, tmsURL);
+                mHandler.post(timerTask);
             }else if (!dialog.isShowing()){
                 mediaPause = true;
                 endAllSounds();
                 exceptionRaised("Connection Error", "Please wait while we try to reconnect.",false);
-                requestTask = new RequestTask(backend, this, threadControl, trainName,this);
-                requestTask.execute(reqURl, tmsURL);
+            }else if (errorFrequency>=TIMEOUT_ERROR_TIME){
+                dialog.dismiss();
+                exceptionRaised("Connection Error", "Could not reconnect." +
+                        "\nThere might be some problem, please try again later!", true);
+                errorFrequency=0;
             }
         }else if (output.equals("okay1")){
-            if (audioButton.getTag().equals("noaudio")) {
-                mediaPause = true;
-            }else if (audioButton.getTag().equals("audio")){
-                mediaPause=false;
+            if (!isRunning) {
+                mHandler.post(timerTask);
+                Log.d("Loading Time", "mapDone ");
             }
-            mHandler.post(timerTask);
-            Log.d("Loading Time", "mapDone ");
+            if (dialog!=null&&dialog.isShowing()) {
+                initialError = false;
+                error = false;
+                errorFrequency = 0;
+                dialog.dismiss();
+                if (audioButton.getTag().equals("noaudio")) {
+                    mediaPause = true;
+                } else if (audioButton.getTag().equals("audio")) {
+                    mediaPause = false;
+                }
+            }
         }
     }
     /**
@@ -383,7 +396,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private Runnable timerTask = new Runnable() {
             @Override
             public void run() {
-                if (requestTask.getStatus()== AsyncTask.Status.FINISHED) {
+                if (requestTask.getStatus()==AsyncTask.Status.FINISHED&&initialError){
+                    requestTask = new RequestTask(backend, MainActivity.this, threadControl, trainName, MainActivity.this);
+                    requestTask.execute(reqURl, tmsURL);
+                }
+                else if (requestTask.getStatus()== AsyncTask.Status.FINISHED) {
                     requestTask = new RequestTask(backend, MainActivity.this, threadControl, trainName,MainActivity.this);
                     requestTask.execute("", tmsURL);// backEndServer
                     isRunning=true;
@@ -736,6 +753,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 }
             }
             addToMap2(signalMarker);
+        }else{
+
         }
     }
     /**
