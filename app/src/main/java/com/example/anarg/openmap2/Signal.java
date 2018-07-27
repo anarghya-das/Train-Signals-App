@@ -23,6 +23,13 @@ public class Signal {
         signalID=stnCode+SignalName;
     }
     /**
+     * Default Constructor
+     */
+    Signal(){
+        SignalAspect="";
+        signalID="";
+    }
+    /**
      * Getter for signal ID.
      * @return signal ID of the signal
      */

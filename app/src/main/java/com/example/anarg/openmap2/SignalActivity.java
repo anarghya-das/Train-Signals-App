@@ -80,6 +80,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
+    private Signal signalToWrite;
 
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
@@ -119,6 +120,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         signalID1=findViewById(R.id.SignalID1);
         signalID2=findViewById(R.id.SignalID2);
         signalID3=findViewById(R.id.SignalID3);
+        signalToWrite=new Signal();
         repeatButton=findViewById(R.id.repeatButton);
         audioButton= findViewById(R.id.soundButton);
         seekBar=findViewById(R.id.repeatBar);
@@ -449,6 +451,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             if (error){
                 errorFrequency++;
             }
+            writeLog();
             mHandler.postDelayed(timerTask, 1);
         }};
     /**
@@ -701,5 +704,18 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         seekBar.setVisibility(View.VISIBLE);
         repeatButton=findViewById(R.id.repeatButton);
         repeatButton.setVisibility(View.INVISIBLE);
+    }
+    private void writeLog(){
+        String logDetails="";
+        Long tsLong = System.currentTimeMillis();
+        String ts = tsLong.toString();
+        if (currentSignal!=null) {
+            if (!signalToWrite.getSignalAspect().equals(currentSignal.getSignalAspect())) {
+                signalToWrite=currentSignal;
+                logDetails = logDetails + trainName + "," + trainNo + "," + trackName + "," + signalToWrite.getSignalID()
+                        + "," + signalToWrite.getSignalAspect() + "," + ts;
+            }
+        }
+        Log.d("FileLog", logDetails);
     }
 }

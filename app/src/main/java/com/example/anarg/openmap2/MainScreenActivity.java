@@ -83,7 +83,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
             if (n != 0) {
                 editText.setText(Long.toString(n));
             }
-            if (requestTaskPost.getStatus()==RequestTask.Status.RUNNING){
+            if (requestTaskPost.getStatus()==RequestTaskPost.Status.RUNNING){
                 load("Please wait while the data loads...");
             }
         }else{
