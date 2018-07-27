@@ -237,6 +237,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     i.putExtra("language",audioLanguage);
                     mediaPause=true;
                     endAllSounds();
+                    timer.cancel();
                     threadControl.pause();
                     mHandler.removeCallbacks(timerTask);
                     SignalActivity.this.startActivityForResult(i,2);
@@ -261,6 +262,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                 b.setText(audioLanguage);
                 mediaPause=false;
                 isRunning=false;
+                timer = new Timer();
+                repeatTimer = new RepeatTimer(currentSignal, this);
+                timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
                 audioButton.setTag("audio");
                 audioButton.setImageResource(R.drawable.audio);
             }
@@ -286,6 +290,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         if(!isRunning) {
             mHandler.post(timerTask);
             threadControl.resume();
+            Log.d("Problem", "done");
         }
     }
 
@@ -435,7 +440,8 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         @Override
         public void run() {
             if (SignalPostRequest.getStatus()== AsyncTask.Status.FINISHED) {
-                Log.d("result", "run: ");
+                Log.d("TaskTime", "run: ");
+                repeatChecks();
                 SignalPostRequest= new SignalPostRequest(trainName,SignalActivity.this,threadControl,SignalActivity.this);
                 SignalPostRequest.execute(tmsURL); //backEndServer,jsonPost("active")
                 isRunning=true;
@@ -496,7 +502,6 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
      * @param t The current train which the user has selected
      */
     public void createSignal(ArrayList<Signal> signals,Train t){
-        repeatChecks();
         trackName=t.getTrackName();
         tv3.setText("Track Name: "+trackName);
         if (signals!=null) {

@@ -57,10 +57,10 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
      */
     @Override
     protected void onPreExecute() {
-        if (gp.getMap()==null) {
-            gp.createBottomBar();
-            gp.createMap();
-        }
+//        if (gp.getMap()==null) {
+//            gp.createBottomBar();
+//            gp.createMap();
+//        }
     }
     /**
      * The network connections are done here in background
@@ -69,6 +69,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
      */
     @Override
     protected ArrayList<String> doInBackground(String... uri) {
+        Log.d("Map", "Start");
         ArrayList<String> a = new ArrayList<>();
         boolean t = true;
             try {
@@ -122,7 +123,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
             response.processFinish("null1");
         } else {
             if (result.size() == 2) {
-                gp.setMapCenterOnLocation();
+//                gp.setMapCenterOnLocation();
                 HashMap<String, GeoPoint> h = b.jsonPlot(result.get(0));
                 ArrayList<Train> ts=b.jsonParse(result.get(1));
                 if (ts!=null) {
@@ -131,6 +132,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                         gp.populateMarkers(h);
                         gp.addSignalToMap(t.getSignals());
                         gp.setMapCenter(h.get(getFirstIndex(t.getSignals())));
+                        Log.d("Map", "Done ");
                         response.processFinish("okay1");
                     }
                 }

@@ -52,6 +52,7 @@ public class SignalPostRequest extends AsyncTask<String,Void,String> {
      */
     @Override
     protected String doInBackground(String... strings) {
+        Log.d("TaskTime", "Start ");
         try {
             String s=null;
             boolean t=true;

@@ -113,8 +113,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
     //Checks whether the initial connection to the database server is okay or not
-    private boolean initialError;
+    private boolean initialError,restart;
     //Stores the location manager reference which checks whether GPS is on or not
+    private LocationManager manager;
     /**
      * Initialises all the above instance variables
      */
@@ -126,7 +127,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         //handle permissions first, before map is created. not depicted here
         // Write you code here if permission already given.
         //load/initialize the osmdroid configuration, this can be done
-        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
             locationPermission = false;
             firstChange = false;
             repeat = true;
@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             user_Long = 0.0;
             user_Lat = 0.0;
             initialError=false;
+            restart=false;
             Context ctx = getApplicationContext();
             Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
             //setting this before the layout is inflated is a good idea
@@ -150,6 +151,8 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             //note, the load method also sets the HTTP User Agent to your application's package name, abusing osm's tile servers will get you banned based on this string
             //inflate and create the map
             setContentView(R.layout.activity_main);
+            createBottomBar();
+            createMap();
             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             am.setStreamVolume(
                     AudioManager.STREAM_MUSIC,
@@ -190,18 +193,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             requestTask.execute(reqURl, tmsURL);
 //        setMapCenter();
             askPermission(Manifest.permission.ACCESS_FINE_LOCATION, MY_PERMISSIONS_REQUEST_LOCATION);
-            if (locationPermission) {
-                GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
-                myLocationoverlay = new MyLocationNewOverlay(gp, map);
-                myLocationoverlay.enableMyLocation();
-                myLocationoverlay.setDrawAccuracyEnabled(false);
-                Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
-                myLocationoverlay.setPersonIcon(bitmapIcon);
-                map.getOverlays().add(myLocationoverlay);
-                myLocation = myLocationoverlay.getMyLocation();
-                map.invalidate();
-//            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
-            }
+        manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
         if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
             buildAlertMessageNoGps();
         }
@@ -281,6 +273,22 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             if (!isRunning) {
                 mHandler.post(timerTask);
                 Log.d("Loading Time", "mapDone ");
+            }
+            if (locationPermission&&!restart) {
+                GpsMyLocationProvider gp = new GpsMyLocationProvider(getApplicationContext());
+                myLocationoverlay = new MyLocationNewOverlay(gp, map);
+                myLocationoverlay.enableMyLocation();
+                myLocationoverlay.setDrawAccuracyEnabled(false);
+                Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
+                myLocationoverlay.setPersonIcon(bitmapIcon);
+                mapController = map.getController();
+                mapController.setZoom(18.6f);
+                myLocationoverlay.enableFollowLocation();
+                map.getOverlays().add(myLocationoverlay);
+                myLocation = myLocationoverlay.getMyLocation();
+                map.invalidate();
+                restart=true;
+//            Toast.makeText(this,"latitude: "+myLocation.getLatitude()+", Longitude: "+myLocation.getLongitude(),Toast.LENGTH_SHORT).show();
             }
             if (dialog!=null&&dialog.isShowing()) {
                 initialError = false;
@@ -416,10 +424,15 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
          */
     public void setMapCenter(GeoPoint g){
         mapController = map.getController();
-        mapController.setZoom(18.6f);
         if (g!=null) {
+            mapController.setZoom(18.6f);
 //        GeoPoint g=new GeoPoint(22.578802, 88.365743);
             mapController.setCenter(g);
+            mapController.animateTo(g);
+        }else{
+            mapController.setZoom(10f);
+            GeoPoint kolkata=new GeoPoint(22.5726, 88.3639);
+            mapController.animateTo(kolkata);
         }
     }
 
@@ -429,6 +442,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     public void setMapCenterOnLocation(){
         mapController = map.getController();
         mapController.setZoom(18.6f);
+//        mapController.animateTo(myLocation);
         mapController.setCenter(myLocation);
     }
 
@@ -462,13 +476,15 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
      *Switches the camera to the focus on the current user location.
      */
     private void locationToast(){
-        if (!locationPermission) {
+        if (!locationPermission||!manager.isProviderEnabled( LocationManager.GPS_PROVIDER )) {
             Toast.makeText(this, "Enable Location permission to Use this!", Toast.LENGTH_SHORT).show();
         } else {
             mapController = map.getController();
 //            mapController.setZoom(15.6f);
             if (myLocation != null) {
                 mapController.animateTo(myLocation);
+                myLocationoverlay.enableFollowLocation();
+//                mapController.setCenter(myLocation);
             Toast.makeText(this, "Latitude: " + myLocation.getLatitude() +
                     ", Longitude: " + myLocation.getLongitude(), Toast.LENGTH_SHORT).show();
             } else {
@@ -497,6 +513,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         super.onPause();
         threadControl.pause();
         mediaPause=true;
+        restart=true;
         endAllSounds();
         mHandler.removeCallbacks(timerTask);
         //this will refresh the osmdroid configuration on resuming.
@@ -753,8 +770,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 }
             }
             addToMap2(signalMarker);
-        }else{
-
         }
     }
     /**
@@ -866,6 +881,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
                     myLocationoverlay.setPersonIcon(bitmapIcon);
                     myLocationoverlay.setDrawAccuracyEnabled(false);
+                    mapController = map.getController();
+                    mapController.setZoom(18.6f);
+                    myLocationoverlay.enableFollowLocation();
                     map.getOverlays().add(myLocationoverlay);
                     map.invalidate();
                     Toast.makeText(this,"Location Sharing Enabled!",Toast.LENGTH_SHORT).show();
