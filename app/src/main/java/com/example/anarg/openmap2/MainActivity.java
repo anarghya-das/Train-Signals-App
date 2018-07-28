@@ -13,9 +13,11 @@ import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -43,6 +45,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Timer;
 
 /**
@@ -116,6 +119,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private boolean initialError,restart;
     //Stores the location manager reference which checks whether GPS is on or not
     private LocationManager manager;
+
+    private AlertDialog loadingDialog;
+
     /**
      * Initialises all the above instance variables
      */
@@ -191,6 +197,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             b.setText(audioLanguage);
             requestTask = new RequestTask(backend, this, threadControl, trainName, this);
             requestTask.execute(reqURl, tmsURL);
+            if (requestTask.getStatus()==RequestTask.Status.RUNNING){
+                load("Please wait while Map Loads");
+            }
 //        setMapCenter();
             askPermission(Manifest.permission.ACCESS_FINE_LOCATION, MY_PERMISSIONS_REQUEST_LOCATION);
         manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
@@ -270,6 +279,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 errorFrequency=0;
             }
         }else if (output.equals("okay1")){
+            loadingDialog.dismiss();
             if (!isRunning) {
                 mHandler.post(timerTask);
                 Log.d("Loading Time", "mapDone ");
@@ -281,9 +291,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 myLocationoverlay.setDrawAccuracyEnabled(false);
                 Bitmap bitmapIcon = BitmapFactory.decodeResource(getResources(), R.drawable.train);
                 myLocationoverlay.setPersonIcon(bitmapIcon);
-                mapController = map.getController();
-                mapController.setZoom(18.6f);
-                myLocationoverlay.enableFollowLocation();
+                if(myLocationoverlay.getLastFix()!=null) {
+                    mapController = map.getController();
+                    mapController.setZoom(18.6f);
+                    myLocationoverlay.enableFollowLocation();
+                }
                 map.getOverlays().add(myLocationoverlay);
                 myLocation = myLocationoverlay.getMyLocation();
                 map.invalidate();
@@ -417,7 +429,6 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     errorFrequency++;
                     Log.d("ERRORTEST", "ET: "+ errorFrequency);
                 }
-                mHandler.postDelayed(timerTask, 1);
             }};
         /**
          * Sets the map camera to the first signal marker when the map initializes
@@ -430,7 +441,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             mapController.setCenter(g);
             mapController.animateTo(g);
         }else{
-            mapController.setZoom(10f);
+            mapController.setZoom(13f);
             GeoPoint kolkata=new GeoPoint(22.5726, 88.3639);
             mapController.animateTo(kolkata);
         }
@@ -909,7 +920,10 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     {
         if ((keyCode == KeyEvent.KEYCODE_BACK))
         {
-//            threadControl.cancel();
+            Intent intent=new Intent(MainActivity.this,SignalActivity.class);
+            intent.putExtra("language",audioLanguage);
+            setResult(RESULT_OK,intent);
+            finish();
             finish();
         }
         return super.onKeyDown(keyCode, event);
@@ -1018,5 +1032,17 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                 });
         final AlertDialog alert = builder.create();
         alert.show();
+    }
+    /**
+     * Method which creates the loading dialog when the data takes time to load
+     */
+    private void load(String body) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(body)
+                .setTitle("Loading");
+        loadingDialog = builder.create();
+        loadingDialog.setCanceledOnTouchOutside(false);
+//        loadingDialog.setCancelable(false);
+        loadingDialog.show();
     }
 }

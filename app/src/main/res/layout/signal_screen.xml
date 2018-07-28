@@ -281,13 +281,17 @@
         android:id="@+id/repeatButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginLeft="44dp"
+        android:layout_marginRight="8dp"
         android:layout_marginStart="44dp"
-        android:src="@drawable/repeat"
         android:onClick="repeatButtonHandler"
+        android:src="@drawable/repeat"
         app:backgroundTint="@android:color/white"
         app:layout_constraintBottom_toTopOf="@+id/navigation"
+        app:layout_constraintEnd_toStartOf="@+id/sig3"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
     <android.support.design.widget.BottomNavigationView

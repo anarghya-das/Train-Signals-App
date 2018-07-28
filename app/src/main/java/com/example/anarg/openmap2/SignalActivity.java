@@ -1,5 +1,6 @@
 package com.example.anarg.openmap2;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -8,10 +9,15 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -28,8 +34,17 @@ import android.widget.Toast;
 
 import com.eclipsesource.json.JsonObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -81,6 +96,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     //Timeout duration of the app after it encounters an error
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
     private Signal signalToWrite;
+    private static final String folderPath=Environment.getExternalStorageDirectory().getAbsolutePath()+"/.FogSignal";
 
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
@@ -239,7 +255,9 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
                     i.putExtra("language",audioLanguage);
                     mediaPause=true;
                     endAllSounds();
-                    timer.cancel();
+                    if(timer!=null) {
+                        timer.cancel();
+                    }
                     threadControl.pause();
                     mHandler.removeCallbacks(timerTask);
                     SignalActivity.this.startActivityForResult(i,2);
@@ -254,19 +272,24 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
      * @param resultCode code which was assigned to the intent while sending
      * @param data data passed through the intent while sending
      */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d("Problem", "onActivityResult: ");
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==2){
             if (resultCode==RESULT_OK){
+                Log.d("Intent", Objects.toString(currentSignal));
+                Log.d("Intent", Integer.toString(repeatFrequency));
                 audioLanguage= data.getStringExtra("language");
                 b.setText(audioLanguage);
                 mediaPause=false;
                 isRunning=false;
-                timer = new Timer();
-                repeatTimer = new RepeatTimer(currentSignal, this);
-                timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
+                if (currentSignal!=null) {
+                    timer = new Timer();
+                    repeatTimer = new RepeatTimer(currentSignal, this);
+                    timer.scheduleAtFixedRate(repeatTimer, 0, repeatFrequency * 1000);
+                }
                 audioButton.setTag("audio");
                 audioButton.setImageResource(R.drawable.audio);
             }
@@ -451,7 +474,11 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             if (error){
                 errorFrequency++;
             }
-            writeLog();
+            try {
+                writeLog();
+            } catch (IOException e) {
+                Log.d("FileLog", "error");
+            }
             mHandler.postDelayed(timerTask, 1);
         }};
     /**
@@ -705,17 +732,57 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         repeatButton=findViewById(R.id.repeatButton);
         repeatButton.setVisibility(View.INVISIBLE);
     }
-    private void writeLog(){
-        String logDetails="";
-        Long tsLong = System.currentTimeMillis();
-        String ts = tsLong.toString();
-        if (currentSignal!=null) {
-            if (!signalToWrite.getSignalAspect().equals(currentSignal.getSignalAspect())) {
-                signalToWrite=currentSignal;
-                logDetails = logDetails + trainName + "," + trainNo + "," + trackName + "," + signalToWrite.getSignalID()
-                        + "," + signalToWrite.getSignalAspect() + "," + ts;
+    private void writeLog() throws IOException {
+        if (!isExternalStorageWritable()){
+            throw new IOException();
+        }else {
+            String logDetails = "";
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d HH:mm:ss.SSS");
+            String format = s.format(new Date());
+            if (currentSignal != null) {
+                if (!signalToWrite.getSignalAspect().equals(currentSignal.getSignalAspect())) {
+                    signalToWrite = currentSignal;
+                    logDetails = "[" + format + "]," + trainName + "," + trainNo + "," + trackName + "," + signalToWrite.getSignalID()
+                            + "," + signalToWrite.getSignalAspect() + "\n";
+                }
+                writeFile(Integer.toString(trainNo), logDetails);
+                Log.d("FileLog", logDetails);
             }
         }
-        Log.d("FileLog", logDetails);
+    }
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
+    /* Checks if external storage is available to at least read */
+    public boolean isExternalStorageReadable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+    private void writeFile(String trainNumber,String logLine) throws IOException {
+        File folder = new File(folderPath);
+        FileWriter logFile;
+        if (!folder.exists()) {
+            folder.mkdir();
+        }
+        File file=new File(folder, "."+trainNumber+".log.csv");
+        if(!file.exists()){
+            logFile=new FileWriter(file);
+            String s="Time,Train Name,Train Number,Track Name,Signal ID,Signal Aspect\n";
+            logFile.write(s);
+        }else {
+            logFile = new FileWriter(file, true);
+        }
+        logFile.write(logLine);
+        logFile.close();
     }
 }

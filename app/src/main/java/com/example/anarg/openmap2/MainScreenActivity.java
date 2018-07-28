@@ -1,15 +1,20 @@
 package com.example.anarg.openmap2;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -30,14 +35,14 @@ import java.util.List;
 This class controls the welcome screen of the app.
 @author Anarghya Das
  */
-public class MainScreenActivity extends AppCompatActivity implements AsyncResponse{ //AppCompatActivity
+public class MainScreenActivity extends AppCompatActivity implements AsyncResponse { //AppCompatActivity
     //TMS URL from which the data is fetched in the app
     private static final String tmsURL = "http://tms.affineit.com:4445/SignalAhead/Json/SignalAhead";
 //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
 
     //Autocomplete widget used to display train name, train number and track name respectively
-    private AutoCompleteTextView autocompleteView,autocompleteView2,autoCompleteTextView3;
+    private AutoCompleteTextView autocompleteView, autocompleteView2, autoCompleteTextView3;
     //Edit Text widget used to enter the phone number of the driver
     private EditText editText;
     //Text view widget used to show the direction of the train selected (Invisible by default)
@@ -51,7 +56,8 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     //Dialog widget which displays the loading and the error messages
     private AlertDialog dialog;
     //Boolean variable which ensures that activity is not recreated during the first run
-    private boolean restart;
+    private boolean restart, fileIOPermission;
+
     /**
      * The first function which runs after the activity has started
      * Initializes the the instance variables declared above
@@ -62,11 +68,11 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         Log.d("Loading Time", "initialStarted ");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_screen);
-        restart=false;
-        if (getIntent().getBooleanExtra("Exit", false))
-        {
+        restart = false;
+        fileIOPermission = false;
+        if (getIntent().getBooleanExtra("Exit", false)) {
             finish();
-        }else if (connectivityCheck()) {
+        } else if (connectivityCheck()) {
             backEnd = new BackEnd();
             trains = new ArrayList<>();
             android_id = Settings.Secure.getString(this.getContentResolver(),
@@ -83,41 +89,48 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
             if (n != 0) {
                 editText.setText(Long.toString(n));
             }
-            if (requestTaskPost.getStatus()==RequestTaskPost.Status.RUNNING){
+            if (requestTaskPost.getStatus() == RequestTaskPost.Status.RUNNING) {
                 load("Please wait while the data loads...");
             }
-        }else{
-            exceptionRaised("Connectivity Error","Enable mobile data or WiFi to use this app.");
+        } else {
+            exceptionRaised("Connectivity Error", "Enable mobile data or WiFi to use this app.");
         }
     }
+
     /**
      * If the activity is restarted then refreshes the screen and loads new data
      */
     @Override
     protected void onResume() {
         super.onResume();
-        if (restart&&dialog!=null){
+        if (restart && dialog != null) {
             restart();
-            restart=false;
+            restart = false;
         }
     }
+
     /**
      * Sets restart activity to true
      */
     @Override
     protected void onPause() {
         super.onPause();
-        restart=true;
+        restart = true;
     }
+
     /**
      * This method runs after the async task is complete and executes proper functions based on the
      * result received.
+     *
      * @param asyncOutput Stores the result of the async task after completion.
      */
     @Override
     public void processFinish(String asyncOutput) {
         if (dialog.isShowing()) {
             dialog.dismiss();
+            if (!fileIOPermission) {
+                askPermission(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE, 1);
+            }
             Log.d("Loading Time", "initialDone ");
         }
         switch (asyncOutput) {
@@ -139,105 +152,135 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
 
     /**
      * Setter method to populate the array list of trains.
+     *
      * @param t Array list of trains
      */
-    public void setTrains(ArrayList<Train> t){ trains=t; }
+    public void setTrains(ArrayList<Train> t) {
+        trains = t;
+    }
+
     /**
      * @return Autocomplete text view containing the track names.
      */
-    public AutoCompleteTextView getAutoCompleteTextView3() { return autoCompleteTextView3; }
+    public AutoCompleteTextView getAutoCompleteTextView3() {
+        return autoCompleteTextView3;
+    }
+
     /**
      * @return Autocomplete text view containing the train names.
      */
-    public AutoCompleteTextView getAutocompleteView() { return autocompleteView; }
+    public AutoCompleteTextView getAutocompleteView() {
+        return autocompleteView;
+    }
+
     /**
      * @return Autocomplete text view containing the train ids.
      */
-    public AutoCompleteTextView getAutocompleteView2() { return autocompleteView2; }
+    public AutoCompleteTextView getAutocompleteView2() {
+        return autocompleteView2;
+    }
 
     /**
      * Creates the autocomplete text view for train names.
-     * @param arr Array which stores the train names in autocomplete text view.
+     *
+     * @param arr       Array which stores the train names in autocomplete text view.
      * @param allTrains Array list of the trains received from the server
      */
-    public void createTrainNameView(String[] arr, ArrayList<Train> allTrains){
+    public void createTrainNameView(String[] arr, ArrayList<Train> allTrains) {
         int layoutItemId = android.R.layout.simple_dropdown_item_1line;
         List<String> trainList = Arrays.asList(arr);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, layoutItemId, trainList);
         autocompleteView.setAdapter(adapter);
-        autocompleteView.setOnItemClickListener(new onItemClickListener(allTrains,direction,"adapter 1",this));
+        autocompleteView.setOnItemClickListener(new onItemClickListener(allTrains, direction, "adapter 1", this));
     }
+
     /**
      * Creates the autocomplete text view for train IDs.
-     * @param arr Array which stores the train IDs in autocomplete text view.
+     *
+     * @param arr       Array which stores the train IDs in autocomplete text view.
      * @param allTrains Array list of the trains received from the server
      */
-    public void createTrainIDView(String[] arr,ArrayList<Train> allTrains){
+    public void createTrainIDView(String[] arr, ArrayList<Train> allTrains) {
         int layoutItemId = android.R.layout.simple_dropdown_item_1line;
         List<String> trainList = Arrays.asList(arr);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, layoutItemId, trainList);
         autocompleteView2.setAdapter(adapter);
         autocompleteView2.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-        autocompleteView2.setOnItemClickListener(new onItemClickListener(allTrains,direction,"adapter 2",this));
+        autocompleteView2.setOnItemClickListener(new onItemClickListener(allTrains, direction, "adapter 2", this));
     }
+
     /**
      * Creates the autocomplete text view for track names.
-     * @param arr Array which stores the track names in autocomplete text view.
+     *
+     * @param arr       Array which stores the track names in autocomplete text view.
      * @param allTrains Array list of the trains received from the server
      */
-    public void createTrackNameView(String[] arr,ArrayList<Train> allTrains){
+    public void createTrackNameView(String[] arr, ArrayList<Train> allTrains) {
         int layoutItemId = android.R.layout.simple_dropdown_item_1line;
         List<String> trainList = Arrays.asList(arr);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, layoutItemId, trainList);
         autoCompleteTextView3.setAdapter(adapter);
-        autoCompleteTextView3.setOnItemClickListener(new onItemClickListener(allTrains,direction,"adapter 3",this));
+        autoCompleteTextView3.setOnItemClickListener(new onItemClickListener(allTrains, direction, "adapter 3", this));
     }
+
     /**
      * Shows the dropdown list of all the train names.
      */
-    public void dropDown1(View view) { autocompleteView.showDropDown(); }
+    public void dropDown1(View view) {
+        autocompleteView.showDropDown();
+    }
+
     /**
      * Shows the dropdown list of all the train IDs.
      */
-    public void dropDown2(View view) { autocompleteView2.showDropDown(); }
+    public void dropDown2(View view) {
+        autocompleteView2.showDropDown();
+    }
+
     /**
      * Shows the dropdown list of all the track names.
      */
-    public void dropdown3(View view){ autoCompleteTextView3.showDropDown(); }
+    public void dropdown3(View view) {
+        autoCompleteTextView3.showDropDown();
+    }
+
     /**
      * Clears the autocomplete text view widgets of the train names, IDs and track names.
+     *
      * @param view Takes the widget reference which needs to be cleared
      */
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     public void clear(View view) {
-        if (view==findViewById(R.id.clear1)){
-            autocompleteView.setText("",false);
+        if (view == findViewById(R.id.clear1)) {
+            autocompleteView.setText("", false);
             direction.setVisibility(View.INVISIBLE);
-        }else if (view==findViewById(R.id.clear2)){
-            autocompleteView2.setText("",false);
+        } else if (view == findViewById(R.id.clear2)) {
+            autocompleteView2.setText("", false);
             direction.setVisibility(View.INVISIBLE);
-        }else if (view==findViewById(R.id.clear3)){
-            autoCompleteTextView3.setText("",false);
+        } else if (view == findViewById(R.id.clear3)) {
+            autoCompleteTextView3.setText("", false);
             direction.setVisibility(View.INVISIBLE);
-        }else if (view==findViewById(R.id.clear4)){
+        } else if (view == findViewById(R.id.clear4)) {
             editText.setText("");
         }
     }
+
     /**
      * OnClick button handler of the Enter button, checks whether all the input is correct or not
      * and then starts the new intent to the next activity.
+     *
      * @param view The reference of the button widget
      */
     public void Start(View view) {
-        String param=autocompleteView.getText().toString();
-        String param2=autocompleteView2.getText().toString();
-        String param3=autoCompleteTextView3.getText().toString();
-        TextView direction=findViewById(R.id.directionView);
+        String param = autocompleteView.getText().toString();
+        String param2 = autocompleteView2.getText().toString();
+        String param3 = autoCompleteTextView3.getText().toString();
+        TextView direction = findViewById(R.id.directionView);
         try {
             long num = Long.parseLong(editText.getText().toString());
-            SharedPreferences preferences=getSharedPreferences("myPref",MODE_PRIVATE);
-            SharedPreferences.Editor prefeditor= preferences.edit();
-            prefeditor.putLong("number",num);
+            SharedPreferences preferences = getSharedPreferences("myPref", MODE_PRIVATE);
+            SharedPreferences.Editor prefeditor = preferences.edit();
+            prefeditor.putLong("number", num);
             prefeditor.apply();
             if (param.isEmpty() || param2.isEmpty() || param3.isEmpty()) {
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
@@ -250,73 +293,79 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
 
                 Intent i = new Intent(this, SignalActivity.class);
                 i.putExtra("Signal", param);
-                i.putExtra("TrainNumber",Integer.parseInt(param2));
-                i.putExtra("TrackName",param3);
-                i.putExtra("Phone",num);
-                i.putExtra("id",android_id);
-                i.putExtra("Direction",direction.getText());
+                i.putExtra("TrainNumber", Integer.parseInt(param2));
+                i.putExtra("TrackName", param3);
+                i.putExtra("Phone", num);
+                i.putExtra("id", android_id);
+                i.putExtra("Direction", direction.getText());
                 this.startActivity(i);
 
 //                new ServerPost(this, param3, param, param2, num,android_id,this).execute(backEndServer,
 //                        jsonPost("active", Integer.parseInt(param2), num, param, param3));
-            } else{
+            } else {
                 Toast.makeText(this, "Enter Valid Train Info!", Toast.LENGTH_SHORT).show();
             }
-        }catch (NumberFormatException e){
+        } catch (NumberFormatException e) {
             Toast.makeText(this, "Enter Valid Phone Number!", Toast.LENGTH_SHORT).show();
         }
     }
+
     /**
      * Creates a json object of all the user inputs along with android device ID to send it to the
      * server
+     *
      * @return The json string to be sent to the server
      */
-    public String jsonPost(String status,int trainNo, long phone, String trainName, String trackName){
-        JsonObject o=new JsonObject();
-        o.add("deviceId",android_id);
-        JsonObject o2=new JsonObject();
-        o2.add("trainNo",trainNo);
-        o2.add("phone",phone);
-        o2.add("trainName",trainName);
-        o2.add("trackName",trackName);
-        o.add("info",o2);
-        JsonObject o3=new JsonObject();
-        o3.add("latitude",0);
-        o3.add("longitude",0);
-        o.add("coordinate",o3);
+    public String jsonPost(String status, int trainNo, long phone, String trainName, String trackName) {
+        JsonObject o = new JsonObject();
+        o.add("deviceId", android_id);
+        JsonObject o2 = new JsonObject();
+        o2.add("trainNo", trainNo);
+        o2.add("phone", phone);
+        o2.add("trainName", trainName);
+        o2.add("trackName", trackName);
+        o.add("info", o2);
+        JsonObject o3 = new JsonObject();
+        o3.add("latitude", 0);
+        o3.add("longitude", 0);
+        o.add("coordinate", o3);
         o.add("status", status);
 //        Log.d("worksend", o.toString());
         return o.toString();
     }
+
     /**
      * Checks if the user is connected to Wifi or mobile data or not
+     *
      * @return true is connected and false otherwise
      */
-    private boolean connectivityCheck(){
-        boolean result=false;
+    private boolean connectivityCheck() {
+        boolean result = false;
         ConnectivityManager connectivitymanager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo[] networkInfo = connectivitymanager.getAllNetworkInfo();
         for (NetworkInfo netInfo : networkInfo) {
             if (netInfo.getTypeName().equalsIgnoreCase("WIFI")) {
                 if (netInfo.isConnected()) {
-                    result=true;
+                    result = true;
                 }
             }
             if (netInfo.getTypeName().equalsIgnoreCase("MOBILE")) {
                 if (netInfo.isConnected()) {
-                    result=true;
+                    result = true;
                 }
             }
         }
         return result;
     }
+
     /**
      * Method which creates a custom dialog box to show if the program encountered an error
+     *
      * @param title Title of the dialog box
-     * @param body Body of text for the dialog box
+     * @param body  Body of text for the dialog box
      */
-    public void exceptionRaised(String title,String body) {
-        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+    public void exceptionRaised(String title, String body) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(body)
                 .setTitle(title);
         builder.setNegativeButton("Restart", new DialogInterface.OnClickListener() {
@@ -336,11 +385,12 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         dialog.setCancelable(false);
         dialog.show();
     }
+
     /**
      * Method which creates the loading dialog when the data takes time to load
      */
-    private void load(String body){
-        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+    private void load(String body) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(body)
                 .setTitle("Loading");
         dialog = builder.create();
@@ -348,15 +398,38 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         dialog.setCancelable(false);
         dialog.show();
     }
+
     /**
      * Helper method to restart this activity
      */
-    private void restart(){
+    private void restart() {
         finish();
         Intent i = getBaseContext().getPackageManager()
-                .getLaunchIntentForPackage( getBaseContext().getPackageName() );
+                .getLaunchIntentForPackage(getBaseContext().getPackageName());
         i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(i);
     }
 
+    private void askPermission(String permission,String permission2, int requestCode) {
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{permission,permission2}, requestCode);
+        } else {
+            fileIOPermission = true;
+            Log.d("FIle", Boolean.toString(fileIOPermission));
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case 1:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                        && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permission Granted!",Toast.LENGTH_SHORT).show();
+                }else{
+                    startActivity(new Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS));
+                }
+        }
+    }
 }

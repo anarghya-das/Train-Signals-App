@@ -2,6 +2,9 @@ package com.example.anarg.openmap2;
 
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
+
+import org.osmdroid.tileprovider.modules.IFilesystemCache;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,11 +68,13 @@ public class RequestTaskPost extends AsyncTask<String,String,String> {
         }
         else {
             ArrayList<Train> allTrains = backEnd.jsonParse(s);
-            m.setTrains(allTrains);
-            m.createTrainNameView(trainArray(allTrains), allTrains);
-            m.createTrainIDView(trainID(allTrains), allTrains);
-            m.createTrackNameView(trackName(allTrains),allTrains);
-            delegate.processFinish("done");
+            if (allTrains!=null) {
+                m.setTrains(allTrains);
+                m.createTrainNameView(trainArray(allTrains), allTrains);
+                m.createTrainIDView(trainID(allTrains), allTrains);
+                m.createTrackNameView(trackName(allTrains), allTrains);
+                delegate.processFinish("done");
+            }
         }
     }
     /**
