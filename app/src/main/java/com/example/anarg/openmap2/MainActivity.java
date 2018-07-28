@@ -490,6 +490,9 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
         if (!locationPermission||!manager.isProviderEnabled( LocationManager.GPS_PROVIDER )) {
             Toast.makeText(this, "Enable Location permission to Use this!", Toast.LENGTH_SHORT).show();
         } else {
+            if (myLocationoverlay!=null){
+                checkCurrentLocation();
+            }
             mapController = map.getController();
 //            mapController.setZoom(15.6f);
             if (myLocation != null) {

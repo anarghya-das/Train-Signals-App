@@ -85,7 +85,7 @@ public class RequestTask  extends AsyncTask<String, Void, ArrayList<String>> {
                     }
                     if (uri[0].equals("")){
                         String s2="";
-                        gp.checkCurrentLocation();
+//                        gp.checkCurrentLocation();
 //                        Log.d("signals",Boolean.toString(b));
 //                        if (b){
 //                            s2=post(uri[2],gp.jsonPost("active"));
