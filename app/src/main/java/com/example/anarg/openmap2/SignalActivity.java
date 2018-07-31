@@ -5,48 +5,44 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.eclipsesource.json.JsonObject;
-
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.Timer;
-import java.util.TimerTask;
+
+import javax.crypto.Cipher;
+
+import tgio.rncryptor.RNCryptorNative;
 
 /**
  * This class shows the signal view with the next 3 signals in front of the train also displaying
@@ -97,6 +93,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private static final int TIMEOUT_ERROR_TIME=60000;//in milliseconds ~ 60 seconds
     private Signal signalToWrite;
     private static final String folderPath=Environment.getExternalStorageDirectory().getAbsolutePath()+"/.FogSignal";
+    private static final String encryptionPassword="sgEAafvWVVepbusYGGKFYCCxztKuqFdVHrjtAacugcaenPaTjcyMaHZXrgmCTHpD";
 
 //    private static final String backEndServer= "http://irtrainsignalsystem.herokuapp.com/cgi-bin/senddevicelocation";
     //    private static final String backEndServer= "http://192.168.0.106/railway/senddevicelocations.cgi";
@@ -476,7 +473,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
             }
             try {
                 writeLog();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Log.d("FileLog", "error");
             }
             mHandler.postDelayed(timerTask, 1);
@@ -732,21 +729,24 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         repeatButton=findViewById(R.id.repeatButton);
         repeatButton.setVisibility(View.INVISIBLE);
     }
-    private void writeLog() throws IOException {
+    private void writeLog() throws IOException, GeneralSecurityException {
         if (!isExternalStorageWritable()){
             throw new IOException();
         }else {
-            String logDetails = "";
+            String logDetails;
+            String encrypted;
             @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d HH:mm:ss.SSS");
             String format = s.format(new Date());
             if (currentSignal != null) {
                 if (!signalToWrite.getSignalAspect().equals(currentSignal.getSignalAspect())) {
                     signalToWrite = currentSignal;
                     logDetails = "[" + format + "]," + trainName + "," + trainNo + "," + trackName + "," + signalToWrite.getSignalID()
-                            + "," + signalToWrite.getSignalAspect() + "\n";
+                            + "," + signalToWrite.getSignalAspect();
+                    RNCryptorNative rncryptor = new RNCryptorNative();
+                    encrypted= new String(rncryptor.encrypt(logDetails,encryptionPassword));
+                    writeFile(Integer.toString(trainNo), encrypted+"\n");
+                    Log.d("FileLog", encrypted);
                 }
-                writeFile(Integer.toString(trainNo), logDetails);
-                Log.d("FileLog", logDetails);
             }
         }
     }
@@ -774,14 +774,14 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         if (!folder.exists()) {
             folder.mkdir();
         }
-        File file=new File(folder, "."+trainNumber+".log.csv");
-        if(!file.exists()){
-            logFile=new FileWriter(file);
-            String s="Time,Train Name,Train Number,Track Name,Signal ID,Signal Aspect\n";
-            logFile.write(s);
-        }else {
+        File file=new File(folder,"."+trainNumber+".log");
+//        if(!file.exists()){
+//            logFile=new FileWriter(file);
+//            String s="Time,Train Name,Train Number,Track Name,Signal ID,Signal Aspect,Key\n";
+//            logFile.write(s);
+//        }else {
             logFile = new FileWriter(file, true);
-        }
+//        }
         logFile.write(logLine);
         logFile.close();
     }

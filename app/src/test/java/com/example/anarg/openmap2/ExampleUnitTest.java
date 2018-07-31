@@ -2,6 +2,8 @@ package com.example.anarg.openmap2;
 
 
 
+import android.util.Base64;
+
 import com.eclipsesource.json.JsonObject;
 
 import org.junit.Test;
@@ -35,6 +37,7 @@ public class ExampleUnitTest {
 //        ArrayList<Train> t=b.jsonParse(s);
 //        Train to=b.getTrainFromName("Howrah-Bandel Local",t);
 //        System.out.println(get("http://14.139.219.37/railway/jsonrender.php"));
+
         System.out.print(postagain(tmsURL,"asds"));
 //        System.out.println(jsonPost2());
 //        System.out.println(postagain(tmsURL2,jsonPost2()));
