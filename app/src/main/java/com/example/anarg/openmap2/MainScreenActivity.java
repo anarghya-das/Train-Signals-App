@@ -459,7 +459,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         if (root.exists()) {
             File[] allFiles = root.listFiles();
             if (allFiles.length!=0) {
-                @SuppressLint("SimpleDateFormat") SimpleDateFormat df = new SimpleDateFormat("y-MM-d");
+                @SuppressLint("SimpleDateFormat") SimpleDateFormat df = new SimpleDateFormat("y-MM-dd");
                 for (File folder : allFiles) {
                     if (folder.isDirectory()) {
                         String name = folder.getName().substring(1, folder.getName().length());
