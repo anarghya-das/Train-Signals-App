@@ -483,12 +483,12 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     private void deleteFolder(File f){
         if (f.isDirectory()){
             boolean result=f.delete();
-            if (!result&&deleteAllFilesinFolder(f)){
+            if (!result&&deleteAllFilesInFolder(f)){
                 f.delete();
             }
         }
     }
-    private boolean deleteAllFilesinFolder(File f){
+    private boolean deleteAllFilesInFolder(File f){
         File[] allFiles=f.listFiles();
         boolean res=false;
         for (File fo: allFiles){
