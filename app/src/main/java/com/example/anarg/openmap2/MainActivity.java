@@ -1,6 +1,7 @@
 package com.example.anarg.openmap2;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -14,6 +15,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -43,10 +45,18 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Timer;
+
+import tgio.rncryptor.RNCryptorNative;
 
 /**
  * This class controls the map view of the signals plotted on their respective geo locations.
@@ -119,6 +129,11 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
     private boolean initialError,restart;
     //Stores the location manager reference which checks whether GPS is on or not
     private LocationManager manager;
+    private Signal signalToWrite;
+    private static final String encryptionPassword="sgEAafvWVVepbusYGGKFYCCxztKuqFdVHrjtAacugcaenPaTjcyMaHZXrgmCTHpD";
+    private static final String folderPath=Environment.getExternalStorageDirectory().getAbsolutePath()+"/.FogSignal";
+
+
 
     private AlertDialog loadingDialog;
 
@@ -144,6 +159,7 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
             repeatTimer = new RepeatTimer();
             allMarkers = new ArrayList<>();
             signalMarker = new HashMap<>();
+            signalToWrite=new Signal();
             user_Long = 0.0;
             user_Lat = 0.0;
             initialError=false;
@@ -429,6 +445,12 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
                     errorFrequency++;
                     Log.d("ERRORTEST", "ET: "+ errorFrequency);
                 }
+                try {
+                    writeLog();
+                } catch (Exception e) {
+                    Log.d("FileLog", "error");
+                }
+                mHandler.postDelayed(timerTask, 1);
             }};
         /**
          * Sets the map camera to the first signal marker when the map initializes
@@ -1048,4 +1070,62 @@ public class MainActivity extends AppCompatActivity implements AsyncResponse{ //
 //        loadingDialog.setCancelable(false);
         loadingDialog.show();
     }
+    private void writeLog() throws IOException {
+        if (!isExternalStorageWritable()){
+            throw new IOException();
+        }else {
+            String logDetails;
+            String encrypted;
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d HH:mm:ss.SSS");
+            String format = s.format(new Date());
+            if (currentSignal != null) {
+                if (!signalToWrite.getSignalAspect().equals(currentSignal.getSignalAspect())) {
+                    signalToWrite = currentSignal;
+                    logDetails = "[" + format + "]," + trainName + "," + trainNo + "," + trackName + "," + signalToWrite.getSignalID()
+                            + "," + signalToWrite.getSignalAspect();
+                    RNCryptorNative rncryptor = new RNCryptorNative();
+                    encrypted= new String(rncryptor.encrypt(logDetails,encryptionPassword));
+                    writeFile(Integer.toString(trainNo), encrypted+"\n");
+                    Log.d("FileLog", encrypted);
+                }
+            }
+        }
+    }
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+    private void writeFile(String trainNumber,String logLine) throws IOException {
+        File folder = new File(folderPath);
+        FileWriter logFile;
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d");
+        String currentDate=s.format(new Date());
+        String dateFolderPath=folderPath+"/."+currentDate;
+        File dateFolder=new File(dateFolderPath);
+        folderCheck(folder,dateFolder);
+        File file=new File(dateFolder,"."+trainNumber+".log");
+//        if(!file.exists()){
+//            logFile=new FileWriter(file);
+//            String s="Time,Train Name,Train Number,Track Name,Signal ID,Signal Aspect,Key\n";
+//            logFile.write(s);
+//        }else {
+        logFile = new FileWriter(file, true);
+//        }
+        logFile.write(logLine);
+        logFile.close();
+    }
+
+    private void folderCheck(File rootFolder,File subFolder){
+        if (!rootFolder.exists()){
+            rootFolder.mkdir();
+        }
+        if (!subFolder.exists()){
+            subFolder.mkdir();
+        }
+    }
+
 }

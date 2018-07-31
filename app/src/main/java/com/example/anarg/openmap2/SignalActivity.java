@@ -18,7 +18,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,15 +31,12 @@ import com.eclipsesource.json.JsonObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Timer;
 
-import javax.crypto.Cipher;
 
 import tgio.rncryptor.RNCryptorNative;
 
@@ -729,7 +725,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         repeatButton=findViewById(R.id.repeatButton);
         repeatButton.setVisibility(View.INVISIBLE);
     }
-    private void writeLog() throws IOException, GeneralSecurityException {
+    private void writeLog() throws IOException {
         if (!isExternalStorageWritable()){
             throw new IOException();
         }else {
@@ -771,10 +767,12 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private void writeFile(String trainNumber,String logLine) throws IOException {
         File folder = new File(folderPath);
         FileWriter logFile;
-        if (!folder.exists()) {
-            folder.mkdir();
-        }
-        File file=new File(folder,"."+trainNumber+".log");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d");
+        String currentDate=s.format(new Date());
+        String dateFolderPath=folderPath+"/."+currentDate;
+        File dateFolder=new File(dateFolderPath);
+        folderCheck(folder,dateFolder);
+        File file=new File(dateFolder,"."+trainNumber+".log");
 //        if(!file.exists()){
 //            logFile=new FileWriter(file);
 //            String s="Time,Train Name,Train Number,Track Name,Signal ID,Signal Aspect,Key\n";
@@ -784,5 +782,14 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
 //        }
         logFile.write(logLine);
         logFile.close();
+    }
+
+    private void folderCheck(File rootFolder,File subFolder){
+        if (!rootFolder.exists()){
+            rootFolder.mkdir();
+        }
+        if (!subFolder.exists()){
+            subFolder.mkdir();
+        }
     }
 }
