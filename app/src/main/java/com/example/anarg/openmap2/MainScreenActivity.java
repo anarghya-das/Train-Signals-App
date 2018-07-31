@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
@@ -27,9 +28,17 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.eclipsesource.json.JsonObject;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 /**
 This class controls the welcome screen of the app.
@@ -57,6 +66,9 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     private AlertDialog dialog;
     //Boolean variable which ensures that activity is not recreated during the first run
     private boolean restart, fileIOPermission;
+    private static final String folderPath= Environment.getExternalStorageDirectory().getAbsolutePath()+"/.FogSignal";
+    private static final long dayThreshhold=259200000;//in ms
+
 
     /**
      * The first function which runs after the activity has started
@@ -70,9 +82,17 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
         setContentView(R.layout.main_screen);
         restart = false;
         fileIOPermission = false;
+        askPermission(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE, 1);
         if (getIntent().getBooleanExtra("Exit", false)) {
             finish();
         } else if (connectivityCheck()) {
+            if (fileIOPermission) {
+                try {
+                    deleteOldFolders();
+                } catch (ParseException e) {
+                    Log.d("FileTest", "error");
+                }
+            }
             backEnd = new BackEnd();
             trains = new ArrayList<>();
             android_id = Settings.Secure.getString(this.getContentResolver(),
@@ -126,13 +146,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
      */
     @Override
     public void processFinish(String asyncOutput) {
-        if (dialog.isShowing()) {
-            dialog.dismiss();
-            if (!fileIOPermission) {
-                askPermission(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE, 1);
-            }
-            Log.d("Loading Time", "initialDone ");
-        }
+        dialog.dismiss();
         switch (asyncOutput) {
             case "null":
                 exceptionRaised("Server Problem", "Cannot connect to the Server.Please try again Later.");
@@ -427,9 +441,59 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED
                         && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "Permission Granted!",Toast.LENGTH_SHORT).show();
+                    try {
+                        deleteOldFolders();
+                    } catch (ParseException e) {
+                        Log.d("FileTest", "error");
+                    }
                 }else{
-                    startActivity(new Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS));
+                    Toast.makeText(this,"Enable it!",Toast.LENGTH_SHORT).show(); //change it later
+//                    startActivity(new Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS));
                 }
         }
+    }
+
+    private void deleteOldFolders() throws ParseException {
+        HashMap<Date,File> nameFile=new HashMap<>();
+        File root=new File(folderPath);
+        File[] allFiles=root.listFiles();
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat df=new SimpleDateFormat("y-MM-d");
+        for (File folder: allFiles){
+            if (folder.isDirectory()){
+                String name=folder.getName().substring(1,folder.getName().length());
+                Date date= df.parse(name);
+                nameFile.put(date,folder);
+            }
+        }
+        Log.d("FileTest", nameFile.toString());
+        Date currentDate=new Date();
+        for (Date d: nameFile.keySet()){
+//            Log.d("FileTest", Long.toString(currentDate.getTime()-d.getTime()));
+//            Log.d("FileTest","."+d.toString());
+            if (currentDate.getTime()-d.getTime()>=dayThreshhold) {
+                String date = df.format(d);
+                date = "." + date;
+                String path=folderPath+"/"+date;
+                File folder=new File(path);
+                deleteFolder(folder);
+                Log.d("FileTest", "deleted");
+            }
+        }
+    }
+    private void deleteFolder(File f){
+        if (f.isDirectory()){
+            boolean result=f.delete();
+            if (!result&&deleteAllFilesinFolder(f)){
+                f.delete();
+            }
+        }
+    }
+    private boolean deleteAllFilesinFolder(File f){
+        File[] allFiles=f.listFiles();
+        boolean res=false;
+        for (File fo: allFiles){
+            res=fo.delete();
+        }
+        return res;
     }
 }
