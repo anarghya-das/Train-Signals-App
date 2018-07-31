@@ -67,7 +67,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     //Boolean variable which ensures that activity is not recreated during the first run
     private boolean restart, fileIOPermission;
     private static final String folderPath= Environment.getExternalStorageDirectory().getAbsolutePath()+"/.FogSignal";
-    private static final long dayThreshhold=259200000;//in ms
+    private static final long dayThreshold=259200000;//in ms
 
 
     /**
@@ -456,27 +456,31 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     private void deleteOldFolders() throws ParseException {
         HashMap<Date,File> nameFile=new HashMap<>();
         File root=new File(folderPath);
-        File[] allFiles=root.listFiles();
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat df=new SimpleDateFormat("y-MM-d");
-        for (File folder: allFiles){
-            if (folder.isDirectory()){
-                String name=folder.getName().substring(1,folder.getName().length());
-                Date date= df.parse(name);
-                nameFile.put(date,folder);
-            }
-        }
-        Log.d("FileTest", nameFile.toString());
-        Date currentDate=new Date();
-        for (Date d: nameFile.keySet()){
+        if (root.exists()) {
+            File[] allFiles = root.listFiles();
+            if (allFiles.length!=0) {
+                @SuppressLint("SimpleDateFormat") SimpleDateFormat df = new SimpleDateFormat("y-MM-d");
+                for (File folder : allFiles) {
+                    if (folder.isDirectory()) {
+                        String name = folder.getName().substring(1, folder.getName().length());
+                        Date date = df.parse(name);
+                        nameFile.put(date, folder);
+                    }
+                }
+                Log.d("FileTest", nameFile.toString());
+                Date currentDate = new Date();
+                for (Date d : nameFile.keySet()) {
 //            Log.d("FileTest", Long.toString(currentDate.getTime()-d.getTime()));
 //            Log.d("FileTest","."+d.toString());
-            if (currentDate.getTime()-d.getTime()>=dayThreshhold) {
-                String date = df.format(d);
-                date = "." + date;
-                String path=folderPath+"/"+date;
-                File folder=new File(path);
-                deleteFolder(folder);
-                Log.d("FileTest", "deleted");
+                    if (currentDate.getTime() - d.getTime() >= dayThreshold) {
+                        String date = df.format(d);
+                        date = "." + date;
+                        String path = folderPath + "/" + date;
+                        File folder = new File(path);
+                        deleteFolder(folder);
+                        Log.d("FileTest", "deleted");
+                    }
+                }
             }
         }
     }

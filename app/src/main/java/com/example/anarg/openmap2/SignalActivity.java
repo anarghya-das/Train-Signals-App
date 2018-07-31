@@ -11,6 +11,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomNavigationView;
@@ -731,7 +732,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
         }else {
             String logDetails;
             String encrypted;
-            @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d HH:mm:ss.SSS");
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("HH:mm:ss.SSS");
             String format = s.format(new Date());
             if (currentSignal != null) {
                 if (!signalToWrite.getSignalAspect().equals(currentSignal.getSignalAspect())) {
@@ -767,7 +768,7 @@ public class SignalActivity extends AppCompatActivity implements AsyncResponse {
     private void writeFile(String trainNumber,String logLine) throws IOException {
         File folder = new File(folderPath);
         FileWriter logFile;
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-d");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat s = new SimpleDateFormat("y-MM-dd");
         String currentDate=s.format(new Date());
         String dateFolderPath=folderPath+"/."+currentDate;
         File dateFolder=new File(dateFolderPath);
