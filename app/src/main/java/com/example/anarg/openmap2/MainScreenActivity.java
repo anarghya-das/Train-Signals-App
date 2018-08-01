@@ -67,7 +67,7 @@ public class MainScreenActivity extends AppCompatActivity implements AsyncRespon
     //Boolean variable which ensures that activity is not recreated during the first run
     private boolean restart, fileIOPermission;
     private static final String folderPath= Environment.getExternalStorageDirectory().getAbsolutePath()+"/.FogSignal";
-    private static final long dayThreshold=259200000;//in ms
+    private static final long dayThreshold=604800000;//in ms (currently 7 days)
 
 
     /**
