@@ -7,7 +7,7 @@ package com.example.anarg.openmap2;
  */
 public interface AsyncResponse {
     /**
-     * @param output Output of the async Task
+     * @param output Output of the async Task (VS Code)
      */
     void processFinish(String output);
 }
