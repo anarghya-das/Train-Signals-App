@@ -143,6 +143,11 @@ The app was developed on android because android devices are most popular in Ind
 **Handler** and **Timer** were used in combination with the **Async Task** to make the HTTP requests to the server in every 5 milliseconds. The 5 millisecond time was chosen because of the TMS server updates with new data every 5-10 milliseconds, therefore to avoid losing any data the minimum interval of 5 milliseconds was chosen. The mobile application uses voice notifications to inform the user about the color of the next signal which also works when the phone's screen is off or the app is running in the background. This was also done with the help of **Async Task**.
 
 This project also has a few dependencies namely a [JSON library](https://github.com/ralfstx/minimal-json) which is used to parse the JSON responses received by the app, Open Street Map library used to generate the map view of the app and Android support design libraries to bring the material look and feel to the app.
+
+This app also logs the following information (as shown in Figure 5) whenever there is a change in the first signal. It stores the date, time, train name, train number, track name, signal id, signal aspect of the first signal every time it is changed. It saves this into a csv file and stores it in the internal storage of the phone for future reference.<br>
+![alt text](https://github.com/anarghya-das/Train-Signals-App/blob/master/Images/log.png)<br>
+*Sample Log Data*
+
 # Usage
 As soon as the app starts, the data is fetched from the server and the train driver is greeted with a welcome screen. There the user is required to enter the information of the train or select it from the drop-down list along with their phone number. After all the fields are filled the train driver can click on the enter button and proceed to the next screen of the app. Figure 5 shows the main screen state after all the inputs are properly filled by the train driver.<br> 
 ![alt text](https://github.com/anarghya-das/Train-Signals-App/blob/master/Images/figure5.png)<br>
